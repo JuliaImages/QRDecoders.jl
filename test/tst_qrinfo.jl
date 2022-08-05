@@ -14,19 +14,28 @@
     @test tag
 
     ## fromat decoding
-    fmt = rand(0:31)
-    fmt_code = qrformat(fmt)
-    de_fmt = qrdecode_format(fmt_code)
-    @test fmt == de_fmt
+    fmt_info = rand(0:31)
+    fmt_code = qrformat(fmt_info)
+    fmt_decode_info = qrdecode_format(fmt_code)
+    @test fmt_info == fmt_decode_info
 
     ## random disturbance
-    disturb_fmt = fmt_code
-    for _ in 1:5
-        disturb_fmt ⊻= 1 << rand(0:14)
+    ### errors with dectection capacity(≤5)
+    fmt_code_disturb = fmt_code
+    errors = unique!(rand(0:14, 5))
+    for e in errors
+        fmt_code_disturb ⊻= 1 << e
     end
-    de_fmt = qrdecode_format(disturb_fmt)
-    fmt_dist = hamming_distance(fmt_code, disturb_fmt)
-    @test fmt_dist ≤ 5 && fmt == de_fmt
+    fmt_dist = hamming_distance(fmt_code, fmt_code_disturb)
+    @test fmt_dist == length(errors)
+
+    ## errors within correction capacity(≤2)
+    fmt_code_disturb = fmt_code
+    for _ in 1:2
+        fmt_code_disturb ⊻= 1 << rand(0:14)
+    end
+    fmt_decode_info = qrdecode_format(fmt_code_disturb)
+    @test fmt_info == fmt_decode_info
 end
 
 @testset "Hamming distance" begin

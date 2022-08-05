@@ -53,16 +53,17 @@ binary2quality = Dict(val=>key for (key, val) in quality2binary)
 
 Decode format information.
 """
-function qrdecode_format(fmt::Int)::Int
-    best_fmt, best_dist = -1, 15
-    for test_fmt in 0:31
-        test_code = qrformat(test_fmt)
-        test_dist = hamming_weight(fmt ⊻ test_code)
+function qrdecode_format(fmt_code::Int)::Int
+    fmt_info, best_dist = -1, 15
+    for test_info in 0:31
+        test_code = qrformat(test_info)
+        test_dist = hamming_distance(fmt_code, test_code)
         if test_dist < best_dist
             best_dist = test_dist
-            best_fmt = test_fmt
+            fmt_info = test_info
+        elseif test_dist == best_dist
+            fmt_info = -1
         end
     end
-    ## best_dist > 5 && return -1 # too many errores
-    return best_fmt
+    return fmt_info
 end
