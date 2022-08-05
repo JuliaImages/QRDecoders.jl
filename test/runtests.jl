@@ -3,5 +3,5 @@ using Test
 using QRCode
 import QRCode: formatinfo
 
-include("../src/qrcoder.jl")
-include("tst_qrcode.jl")
+include("../src/qrinfo.jl")
+include("tst_qrinfo.jl")
