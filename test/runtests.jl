@@ -1,6 +1,7 @@
 using QRDecoders
 using Test
+using QRCode
+import QRCode: formatinfo
 
-@testset "QRDecoders.jl" begin
-    # Write your tests here.
-end
+include("../src/qrcoder.jl")
+include("tst_qrcode.jl")
