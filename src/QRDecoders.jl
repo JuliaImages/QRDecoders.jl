@@ -1,5 +1,8 @@
 module QRDecoders
 
-# Write your package code here.
+export Poly
+
+using QRCode
+import QRCode: Poly
 
 end
