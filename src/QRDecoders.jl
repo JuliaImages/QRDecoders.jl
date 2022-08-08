@@ -1,8 +1,10 @@
 module QRDecoders
+using QRCoders
+import QRCoders.Polynomial: Poly
 
 export Poly
 
-using QRCode
-import QRCode: Poly
+include("qrinfo.jl")
+# include("syndrome.jl")
 
 end

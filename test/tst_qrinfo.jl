@@ -1,4 +1,4 @@
-# Test for functions in QRDecoders.jl/src/qrcoder.jl
+# Test for functions in QRDecoders.jl/src/qrinfo.jl
 
 @testset "Format information" begin
     ## format encoding

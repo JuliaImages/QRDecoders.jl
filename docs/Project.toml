@@ -1,4 +1,4 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
-QRCode = "6cfbe66a-a49d-11e9-1842-750d329cfcbb"
+QRCoders = "f42e9828-16f3-11ed-2883-9126170b272d"
 QRDecoders = "d4999880-6331-4276-8b7d-7ee1f305cff8"

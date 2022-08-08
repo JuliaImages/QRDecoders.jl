@@ -4,7 +4,7 @@ authors = ["rex <1073853456@qq.com> and contributors"]
 version = "0.1.0"
 
 [deps]
-QRCode = "6cfbe66a-a49d-11e9-1842-750d329cfcbb"
+QRCoders = "f42e9828-16f3-11ed-2883-9126170b272d"
 
 [compat]
 julia = "1"
