@@ -5,6 +5,6 @@ import QRCoders.Polynomial: Poly
 export Poly
 
 include("qrinfo.jl")
-# include("syndrome.jl")
+include("syndrome.jl")
 
 end

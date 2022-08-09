@@ -329,7 +329,7 @@ git-tree-sha1 = "07504090c0bf95217cadde745316aeaacbf7f363"
 repo-rev = "dev"
 repo-url = "https://github.com/JuliaImages/QRCoders.jl"
 uuid = "f42e9828-16f3-11ed-2883-9126170b272d"
-version = "0.2.0"
+version = "0.1.0"
 
 [[REPL]]
 deps = ["InteractiveUtils", "Markdown", "Sockets", "Unicode"]
