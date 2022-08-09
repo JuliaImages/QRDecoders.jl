@@ -55,5 +55,11 @@ end
         recieved ⊻= 1 << e
     end
     @test hamming_distance(recieved, message) == length(errors)
+
+    ## distance of polynomial
+    msgpoly = randpoly(16)
+    errpoly = randpoly(4)
+    recieved = msgpoly + errpoly
+    @test hamming_distance(msgpoly, recieved) == count(!iszero, errpoly.coeff)
 end
 

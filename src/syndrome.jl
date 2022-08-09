@@ -65,7 +65,7 @@ error_evaluator(syd::Poly, errloc::Poly, n::Int) = syd * errloc % Poly(push!(zer
 Forney algorithm, computes the values (error magnitude) to correct the input message.
 """
 # function correct_erased_errors(msg::Poly, errpos::AbstractVector, n::Int)
-#     
+    
 # end
 
 end
