@@ -2,9 +2,9 @@ using QRDecoders
 using Test
 using QRCoders
 import QRCoders: formatinfo
-import QRCoders.Polynomial: mult, geterrorcorrection, logtable
+import QRCoders.Polynomial: mult, geterrorcorrection, gfpow2, iszeropoly, decodemessage
 import QRDecoders: hamming_weight, hamming_distance, qrformat, qrdecode_format, quality2binary
-import QRDecoders.Syndrome: polynomial_eval, syndrome_polynomial, haserrors,
+import QRDecoders.Syndrome: polynomial_eval, syndrome_polynomial, haserrors, syndrome_decoder
                             erratalocator_polynomial, error_evaluator
 
 

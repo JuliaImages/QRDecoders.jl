@@ -8,7 +8,7 @@
 
 module Syndrome
 
-import QRCoders.Polynomial: mult, geterrorcorrection, Poly, logtable
+using QRCoders.Polynomial: mult, geterrorcorrection, Poly, gfpow2
 
 """
     polynomial_eval(p::Poly, x::Int)
@@ -24,6 +24,19 @@ function polynomial_eval(p::Poly, x::Int)
     return val
 end
 
+"""
+    derivative_polynomial(p::Poly)
+
+Computes the derivative of the polynomial p.
+"""
+function derivative_polynomial(p::Poly)
+    length(p) == 1 && return Poly([0]) ## constant polynomial
+    coeff = Int[]
+    for (i, c) in enumerate(@view(p.coeff[2:end]))
+        push!(coeff, isodd(i) ? c : 0) ## i⋅x = 0 if i is even
+    end
+    return Poly(coeff)
+end
 
 """
     syndrome_polynomial(message::Poly, n::Int)
@@ -31,7 +44,7 @@ end
 Computes the syndrome polynomial S(x) for the message polynomial where the generator polynomial is of degree n.
 """
 function syndrome_polynomial(msg::Poly, n::Int)
-    syndromes = polynomial_eval.(Ref(msg), getindex.(Ref(logtable), 0:(n-1)))
+    syndromes = polynomial_eval.(Ref(msg), gfpow2.(0:(n-1)))
     return Poly(syndromes)
 end
 
@@ -45,27 +58,52 @@ haserrors(msg::Poly, n::Int) = !all(iszero, syndrome_polynomial(msg, n))
 """
     erratalocator_polynomial(errpos::AbstractVector)
 
-Compute the erasures/error locator polynomial λ(x) from the erasures/errors positions.
+Compute the erasures/error locator polynomial Λ(x) from the erasures/errors positions.
 """
 function erratalocator_polynomial(errpos::AbstractVector)
     isempty(errpos) && return Poly([1])
-    return reduce(*, Poly([1, logtable[i]]) for i in errpos)
+    return reduce(*, Poly([1, gfpow2(i)]) for i in errpos)
 end
 
 """
     evaluator_polynomial(syd::Poly, errloc::Poly, n::Int)
 
-Return the evaluator polynomial Ω(x) where Ω(x)≡S(x)λ(x) mod xⁿ.
+Return the evaluator polynomial Ω(x) where Ω(x)≡S(x)Λ(x) mod xⁿ.
 """
-error_evaluator(syd::Poly, errloc::Poly, n::Int) = syd * errloc % Poly(push!(zeros(Int, n), 1))
+evaluator_polynomial(syd::Poly, errloc::Poly, n::Int) = Poly((syd * errloc).coeff[1:n])
 
 """
-    correct_erased_errors(msg::Poly, errpos::AbstractVector, n::Int)
+    syndrome_decoder(msg::Poly, errpos::AbstractVector, n::Int)
 
 Forney algorithm, computes the values (error magnitude) to correct the input message.
 """
-# function correct_erased_errors(msg::Poly, errpos::AbstractVector, n::Int)
+syndrome_decoder(recieved::Poly, errpos::AbstractVector, n::Int) = syndrome_decoder!(copy(recieved), errpos, n)
+function syndrome_decoder!(recieved::Poly, errpos::AbstractVector, n::Int)
+    ## number of errors exceeds limitation of the RS-code
+    length(errpos) > n && throw(ReedSolomonError())
+
+    ## syndrome polynomial S(x)
+    sydpoly = syndrome_polynomial(recieved, n) 
     
-# end
+    ## error locator polynomial
+    errloc = erratalocator_polynomial(errpos)
+    ## derivative of error locator polynomial
+    errderi = derivative_polynomial(errloc)
+    
+    ## evaluator polynomial Ω(x)≡S(x)Λ(x) mod xⁿ
+    evlpoly = evaluator_polynomial(sydpoly, errloc, n)
+    
+    ## computes error magnitudes using Forney algorithm
+    ### e_k = \frac{2^{i_k}⋅Ω(2^{-i_k})}{Λ'(2^{-i_k})}
+    errvals = Int[]
+    for k in errpos
+        num = mult(gfpow2(k), polynomial_eval(evlpoly, gfpow2(-k))) ## numerator
+        den = polynomial_eval(errderi, gfpow2(-k)) ## denominator
+        push!(errvals, divide(num, den))
+    end
+    ### correct errors
+    recieved.coeff[1 .+ errpos] .⊻= errvals
+    return recieved
+end
 
 end
