@@ -17,12 +17,9 @@ using QRDecoders: ReedSolomonError
 Evaluates the polynomial p(x) at x in GF256.
 """
 function polynomial_eval(p::Poly, x::Int)
-    coeff = reverse(p.coeff)
-    val = popfirst!(coeff)
-    for c in coeff
-        val = mult(val, x) ⊻ c
-    end
-    return val
+    val = last(p.coeff) ## leading term
+    coeff = @view(p.coeff[end-1:-1:1])
+    return foldl((i, j) -> mult(i, x) ⊻ j, coeff; init=val)
 end
 
 """
@@ -31,10 +28,11 @@ end
 Computes the derivative of the polynomial p.
 """
 function derivative_polynomial(p::Poly)
-    length(p) == 1 && return Poly([0]) ## constant polynomial
-    coeff = Int[]
+    lp = length(p)
+    lp == 1 && return Poly([0]) ## constant polynomial
+    coeff = Vector{Int}(undef, lp - 1)
     for (i, c) in enumerate(@view(p.coeff[2:end]))
-        push!(coeff, isodd(i) ? c : 0) ## i⋅x = 0 if i is even
+        coeff[i] =  isodd(i) ? c : 0 ## i⋅x = 0 if i is even
     end
     return Poly(coeff)
 end
@@ -111,12 +109,12 @@ end
 Horner's rule, find the polynomial q(x) such that p(x)-(x-a)q(x) is a constant polynomial.
 """
 function reducebyHorner(p::Poly, a::Int)
-    coeff = reverse(p.coeff)
-    val = popfirst!(coeff)
-    reduced = [val]
-    for c in coeff
+    reduced = Vector{Int}(undef, length(p))
+    reduced[1] = val = last(p.coeff)
+    coeff = @view(p.coeff[end-1:-1:1])
+    for (i, c) in enumerate(coeff)
         val = mult(val, a) ⊻ c
-        push!(reduced, val)
+        reduced[i + 1] = val
     end
     return Poly(reverse!(reduced))
 end
@@ -128,13 +126,14 @@ Computes the roots of the polynomial p using Horner's method. Returns a empty li
 """
 function findroots(p::Poly)
     n = length(p) - 1
-    roots = Int[]
+    roots = Vector{Int}(undef, n)
     for r in 0:255
         reducepoly = reducebyHorner(p, r)
+        ## decrease the degree of the polynomial by 1
         popfirst!(reducepoly.coeff) == 0 || continue
-        push!(roots, r)
+        roots[n] = r
         n, p = n - 1, reducepoly
-        n == 0 && return roots
+        n == 0 && return reverse!(roots)
     end
     ## p(x) contains duplicate roots or roots not in GF(256)
     return Int[] 
