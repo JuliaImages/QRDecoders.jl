@@ -1,6 +1,6 @@
 module QRDecoders
 using QRCoders
-using QRCoders.Polynomial: Poly, euclidean_divide
+using QRCoders.Polynomial: Poly
 
 export Poly
 

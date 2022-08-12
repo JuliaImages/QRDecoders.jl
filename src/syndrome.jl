@@ -1,14 +1,15 @@
 # Syndrome decoding
 ## outline
-### 1. Compute the syndromes polynomial
-### 2. Compute the erasure/error locator polynomial (from the syndromes)
-### 3. Compute the erasure/error evaluator polynomial (from the syndromes and erasure/error locator polynomial)
-### 4. Compute the erasure/error magnitude polynomial (from all 3 polynomials above)
+### 1. Compute the syndromes polynomial S(x) = ∑ᵢsᵢxⁱ
+### 2. Compute the erasure/error locator polynomial Λ(x) = ∏ₖ(2^{iₖ}⋅xᵏ - 1) = ∑ᵢλᵢxⁱ
+### 3. Compute the erasure/error evaluator polynomial Ω(x) = S(x)Λ(x) mod xⁿ
+### 4. Compute the erasure/error magnitude polynomial eₖ = (2^{i_k}⋅Ω(2^{-i_k})) / (Λ'(2^{-i_k}))
 ### 5. Repair the input message simply by subtracting the magnitude polynomial from the input message.
 
 module Syndrome
 
-using QRCoders.Polynomial: mult, geterrorcorrection, Poly, gfpow2
+using QRCoders.Polynomial: mult, geterrorcorrection, Poly, gfpow2, divide
+using QRDecoders: ReedSolomonError
 
 """
     polynomial_eval(p::Poly, x::Int)
@@ -41,9 +42,10 @@ end
 """
     syndrome_polynomial(message::Poly, n::Int)
 
-Computes the syndrome polynomial S(x) for the message polynomial where the generator polynomial is of degree n.
+Computes the syndrome polynomial S(x) for the message polynomial where n is the number of syndromes.
 """
 function syndrome_polynomial(msg::Poly, n::Int)
+    ## S(x) = ∑ᵢsᵢxⁱ where sᵢ = R(2ⁱ) = E(2ⁱ)
     syndromes = polynomial_eval.(Ref(msg), gfpow2.(0:(n-1)))
     return Poly(syndromes)
 end
@@ -94,16 +96,48 @@ function syndrome_decoder!(recieved::Poly, errpos::AbstractVector, n::Int)
     evlpoly = evaluator_polynomial(sydpoly, errloc, n)
     
     ## computes error magnitudes using Forney algorithm
-    ### e_k = \frac{2^{i_k}⋅Ω(2^{-i_k})}{Λ'(2^{-i_k})}
-    errvals = Int[]
-    for k in errpos
-        num = mult(gfpow2(k), polynomial_eval(evlpoly, gfpow2(-k))) ## numerator
-        den = polynomial_eval(errderi, gfpow2(-k)) ## denominator
-        push!(errvals, divide(num, den))
-    end
+    ### e_k = \frac{2^{i_k}⋅Ω(2^{-i_k})} {Λ'(2^{-i_k})}
+    forneynum(k::Int) = mult(gfpow2(k), polynomial_eval(evlpoly, gfpow2(-k))) ## numerator
+    forneyden(k::Int) = polynomial_eval(errderi, gfpow2(-k)) ## denominator
+    errvals = @. divide(forneynum(errpos), forneyden(errpos))
     ### correct errors
     recieved.coeff[1 .+ errpos] .⊻= errvals
     return recieved
+end
+
+"""
+    reducebyHorner(p::Poly, a::Int)
+
+Horner's rule, find the polynomial q(x) such that p(x)-(x-a)q(x) is a constant polynomial.
+"""
+function reducebyHorner(p::Poly, a::Int)
+    coeff = reverse(p.coeff)
+    val = popfirst!(coeff)
+    reduced = [val]
+    for c in coeff
+        val = mult(val, a) ⊻ c
+        push!(reduced, val)
+    end
+    return Poly(reverse!(reduced))
+end
+
+"""
+    findroots(p::Poly)
+
+Computes the roots of the polynomial p using Horner's method. Returns a empty list if p(x) contains duplicate roots or roots not in GF(256).
+"""
+function findroots(p::Poly)
+    n = length(p) - 1
+    roots = Int[]
+    for r in 0:255
+        reducepoly = reducebyHorner(p, r)
+        popfirst!(reducepoly.coeff) == 0 || continue
+        push!(roots, r)
+        n, p = n - 1, reducepoly
+        n == 0 && return roots
+    end
+    ## p(x) contains duplicate roots or roots not in GF(256)
+    return Int[] 
 end
 
 end
