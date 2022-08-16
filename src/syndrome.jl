@@ -8,7 +8,7 @@
 
 module Syndrome
 
-using QRCoders.Polynomial: mult, geterrorcorrection, Poly, gfpow2, divide
+using QRCoders.Polynomial: mult, Poly, gfpow2, gflog2, gfinv, divide, iszeropoly, unit, rstripzeros
 using QRDecoders: ReedSolomonError
 
 """
@@ -29,7 +29,7 @@ Computes the derivative of the polynomial p.
 """
 function derivative_polynomial(p::Poly)
     lp = length(p)
-    lp == 1 && return Poly([0]) ## constant polynomial
+    lp == 1 && return zero(Poly) ## constant polynomial
     coeff = Vector{Int}(undef, lp - 1)
     for (i, c) in enumerate(@view(p.coeff[2:end]))
         coeff[i] =  isodd(i) ? c : 0 ## i⋅x = 0 if i is even
@@ -53,7 +53,7 @@ end
 
 Returns true if the message polynomial has errors. (may go undetected when the number of errors exceeds n)
 """
-haserrors(msg::Poly, n::Int) = !all(iszero, syndrome_polynomial(msg, n))
+haserrors(msg::Poly, n::Int) = !iszeropoly(syndrome_polynomial(msg, n))
 
 """
     erratalocator_polynomial(errpos::AbstractVector)
@@ -61,7 +61,7 @@ haserrors(msg::Poly, n::Int) = !all(iszero, syndrome_polynomial(msg, n))
 Compute the erasures/error locator polynomial Λ(x) from the erasures/errors positions.
 """
 function erratalocator_polynomial(errpos::AbstractVector)
-    isempty(errpos) && return Poly([1])
+    isempty(errpos) && return unit(Poly)
     return reduce(*, Poly([1, gfpow2(i)]) for i in errpos)
 end
 
@@ -73,12 +73,12 @@ Return the evaluator polynomial Ω(x) where Ω(x)≡S(x)Λ(x) mod xⁿ.
 evaluator_polynomial(syd::Poly, errloc::Poly, n::Int) = Poly((syd * errloc).coeff[1:n])
 
 """
-    syndrome_decoder(msg::Poly, errpos::AbstractVector, n::Int)
+    fillearsed(msg::Poly, errpos::AbstractVector, n::Int)
 
 Forney algorithm, computes the values (error magnitude) to correct the input message.
 """
-syndrome_decoder(recieved::Poly, errpos::AbstractVector, n::Int) = syndrome_decoder!(copy(recieved), errpos, n)
-function syndrome_decoder!(recieved::Poly, errpos::AbstractVector, n::Int)
+fillearsed(recieved::Poly, errpos::AbstractVector, n::Int) = fillearsed!(copy(recieved), errpos, n)
+function fillearsed!(recieved::Poly, errpos::AbstractVector, n::Int)
     ## number of errors exceeds limitation of the RS-code
     length(errpos) > n && throw(ReedSolomonError())
 
@@ -138,5 +138,60 @@ function findroots(p::Poly)
     ## p(x) contains duplicate roots or roots not in GF(256)
     return Int[] 
 end
+
+"""
+    getposition(Λx::Poly)
+
+Recover positions of errors from the error locator polynomial. Note that Λx = \\Prod_{k=1}^{v}(2^{i_k}⋅x + 1).
+"""
+getposition(Λx::Poly) = mod.(-gflog2.(findroots(Λx)), 255)
+
+"""
+    erratalocator_polynomial(recieved::Poly, n::Int)
+
+Berlekamp-Massey algorithm, compute the error locator polynomial Λ(x).
+"""
+function erratalocator_polynomial(recieved::Poly, nsym::Int)
+    ## syndromes
+    S = syndrome_polynomial(recieved, nsym).coeff
+    nsym -= isodd(nsym) # make nsym an even number
+    S = @view(S[1:nsym])
+
+    ## initialize
+    L = 0 # number of errors
+    x = Poly([0, 1])
+    Λx = unit(Poly) # error locator polynomial
+    Bx = copy(Λx) # copy of the last Λx since L is updated
+
+    ## discrepancy Δᵣ = Λ₀Sᵣ₋₁ + Λ₁Sᵣ₋₂ + ⋯ 
+    getdelta(r) = @views reduce(⊻, mult(i, j) for (i, j) in zip(S[r:-1:1], Λx.coeff))
+
+    ## iteration
+    for r in 1:nsym
+        Δ = getdelta(r)
+        if Δ == 0 || 2 * L > r - 1 # δ = 0
+            Λx, Bx = Λx + Δ * x * Bx, x * Bx
+        else # δ = 1
+            L = r - L
+            Λx, Bx = Λx + Δ * x * Bx, gfinv(Δ) * Λx
+        end
+    end
+    Λx = rstripzeros(Λx)
+
+    ## number of errors exceeds limitation of the RS-code
+    if iszeropoly(Λx) || length(Λx) - 1 > nsym ÷ 2 
+        throw(ReedSolomonError())
+    end
+    return Λx
+end
+
+"""
+    erratalocator_polynomial(recieved::Poly, erased::AbstractVector, n::Int)
+
+Berlekamp-Massey algorithm, compute the error locator polynomial Λ(x) given the erased positions.
+"""
+# function erratalocator_polynomial(recieved::Poly, erased::AbstractVector, nsym::Int)
+    
+# end
 
 end
