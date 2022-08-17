@@ -154,8 +154,6 @@ Berlekamp-Massey algorithm, compute the error locator polynomial Λ(x).
 function erratalocator_polynomial(recieved::Poly, nsym::Int)
     ## syndromes
     S = syndrome_polynomial(recieved, nsym).coeff
-    nsym -= isodd(nsym) # make nsym an even number
-    S = @view(S[1:nsym])
 
     ## initialize
     L = 0 # number of errors
@@ -186,11 +184,11 @@ function erratalocator_polynomial(recieved::Poly, nsym::Int)
 end
 
 """
-    erratalocator_polynomial(recieved::Poly, erased::AbstractVector, n::Int)
+    erratalocator_polynomial(recieved::Poly, erasures::AbstractVector, n::Int)
 
-Berlekamp-Massey algorithm, compute the error locator polynomial Λ(x) given the erased positions.
+Berlekamp-Massey algorithm, compute the error locator polynomial Λ(x) given the erasures positions.
 """
-# function erratalocator_polynomial(recieved::Poly, erased::AbstractVector, nsym::Int)
+# function erratalocator_polynomial(recieved::Poly, erasures::AbstractVector, nsym::Int)
     
 # end
 

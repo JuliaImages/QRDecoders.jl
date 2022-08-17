@@ -146,17 +146,24 @@ end
     @test Λx == errloc
 
     ### too much errors(detected)
-    rawmsg = Poly([0, 1, 0, 2])
-    nsym = 5
+    rawmsg = randpoly(100)
+    nsym = 155
+    errpos = rand(0:176) .+ collect(0:78) # error positions
     msg = rawmsg << nsym + geterrorcorrection(rawmsg, nsym)
-    errpos = [0, 1, 2]
     recieved = copy(msg)
-    recieved.coeff[1 .+ errpos] .⊻= 1
+    recieved.coeff[1 .+ errpos] .⊻= rand(1:255, length(errpos))
     @test_throws ReedSolomonError erratalocator_polynomial(recieved, nsym)
+    
     ### too much errors(undetected!)
+    ### [0] -encode> [0, 0, 0] -transfer> [2, 3, 0] -correct> [2, 3, 1] -decode> [1] 
+    rawmsg = Poly([0])
+    nsym = 2
+    msg = rawmsg << nsym + geterrorcorrection(rawmsg, nsym)
+    errpos = [0, 1]
     recieved = copy(msg)
-    recieved.coeff[1 .+ errpos] .⊻= [2, 3, 3]
+    recieved.coeff[1 .+ errpos] .⊻= [2, 3]
     errloc = erratalocator_polynomial(errpos)
     Λx = erratalocator_polynomial(recieved, nsym)
     @test !iszeropoly(errloc + Λx)
+    @test Λx == erratalocator_polynomial([2])
 end
