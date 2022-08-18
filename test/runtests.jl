@@ -4,9 +4,9 @@ using QRCoders
 import QRCoders: formatinfo
 import QRCoders.Polynomial: mult, geterrorcorrection, gfpow2, iszeropoly, gflog2, unit
 import QRDecoders: hamming_weight, hamming_distance, qrformat, qrdecode_format, quality2binary, ReedSolomonError
-import QRDecoders.Syndrome: polynomial_eval, syndrome_polynomial, haserrors, fillearsed,
+import QRDecoders.Syndrome: polynomial_eval, syndrome_polynomial, haserrors, fillerased,
                             derivative_polynomial, erratalocator_polynomial, evaluator_polynomial,
-                            findroots, reducebyHorner, getposition
+                            findroots, reducebyHorner, getposition, BMdecoder
 
 
 """
