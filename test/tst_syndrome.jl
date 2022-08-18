@@ -160,7 +160,7 @@ end
     recieved = copy(msg)
     recieved.coeff[1 .+ errpos] .⊻= rand(1:255, length(errpos))
     sydpoly = syndrome_polynomial(recieved, nsym)
-    @test_throws ReedSolomonError erratalocator_polynomial(sydpoly, nsym)
+    @test_throws ReedSolomonError erratalocator_polynomial(sydpoly, nsym; check=true)
     @test_throws ReedSolomonError BMdecoder(recieved, nsym)
     
     ### too much errors(undetected!)
@@ -173,7 +173,7 @@ end
     recieved.coeff[1 .+ errpos] .⊻= [2, 3]
     errloc = erratalocator_polynomial(errpos)
     sydpoly = syndrome_polynomial(recieved, nsym)
-    Λx = erratalocator_polynomial(sydpoly, nsym)
+    Λx = erratalocator_polynomial(sydpoly, nsym; check=true)
     @test !iszeropoly(errloc + Λx)
     @test Λx == erratalocator_polynomial([2])
     @test !iszeropoly(BMdecoder(recieved, nsym) + msg)

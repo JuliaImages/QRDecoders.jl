@@ -109,11 +109,11 @@ function erratalocator_polynomial(errpos::AbstractVector)
 end
 
 """
-    erratalocator_polynomial(sydpoly::Poly, n::Int)
+    erratalocator_polynomial(sydpoly::Poly, n::Int; check=false)
 
-Berlekamp-Massey algorithm, compute the error locator polynomial Λ(x).
+Berlekamp-Massey algorithm, compute the error locator polynomial Λ(x). The `check`` tag ensures that Λx can be decomposed into products of one degree polynomials.
 """
-function erratalocator_polynomial(sydpoly::Poly, nsym::Int)
+function erratalocator_polynomial(sydpoly::Poly, nsym::Int; check=false)
     iszeropoly(sydpoly) && return unit(Poly) ## no errors
     ## syndromes
     S = sydpoly.coeff
@@ -143,6 +143,9 @@ function erratalocator_polynomial(sydpoly::Poly, nsym::Int)
     if iszeropoly(Λx) || length(Λx) - 1 > nsym ÷ 2 
         throw(ReedSolomonError())
     end
+
+    ## check if the error locator polynomial is a product of one degree polynomials
+    check && isempty(getposition(Λx)) && throw(ReedSolomonError())
     return Λx
 end
 
@@ -202,12 +205,14 @@ BMdecoder(recieved::Poly, nsym::Int) = BMdecoder!(copy(recieved), nsym)
 function BMdecoder!(recieved::Poly, nsym::Int)
     ## syndrome polynomial S(x)
     sydpoly = syndrome_polynomial(recieved, nsym)
+    iszeropoly(sydpoly) && return recieved ## no errors
 
     ## error locator polynomial
     errloc = erratalocator_polynomial(sydpoly, nsym)
 
     ## error positions
     errpos = getposition(errloc)
+    isempty(errpos) && throw(ReedSolomonError())
 
     ## derivative of the error locator polynomial
     errderi = derivative_polynomial(errloc)
