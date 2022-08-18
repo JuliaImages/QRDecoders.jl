@@ -41,25 +41,25 @@ end
 @testset "Hamming distance" begin
     ## distance of vectors
     message = rand(Int, 16)
-    recieved = copy(message)
+    received = copy(message)
     errors = unique!(rand(1:16, 8))
     for e in errors
-        recieved[e] += 1
+        received[e] += 1
     end
-    @test hamming_distance(message, recieved) == length(errors)
+    @test hamming_distance(message, received) == length(errors)
 
     ## distance of binary numbers
-    recieved = message = rand(1:2^16-1) ## length(message) <= 16
+    received = message = rand(1:2^16-1) ## length(message) <= 16
     erros = unique!(rand(0:15, 8))
     for e in errors
-        recieved ⊻= 1 << e
+        received ⊻= 1 << e
     end
-    @test hamming_distance(recieved, message) == length(errors)
+    @test hamming_distance(received, message) == length(errors)
 
     ## distance of polynomial
     msgpoly = randpoly(16)
     errpoly = randpoly(4)
-    recieved = msgpoly + errpoly
-    @test hamming_distance(msgpoly, recieved) == count(!iszero, errpoly.coeff)
+    received = msgpoly + errpoly
+    @test hamming_distance(msgpoly, received) == count(!iszero, errpoly.coeff)
 end
 

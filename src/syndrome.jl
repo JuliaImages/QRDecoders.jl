@@ -170,13 +170,13 @@ evaluator_polynomial(syd::Poly, errloc::Poly, n::Int) = Poly((syd * errloc).coef
 
 Forney algorithm, computes the values (error magnitude) to correct the input message.
 """
-fillerased(recieved::Poly, errpos::AbstractVector, nsym::Int) = fillerased!(copy(recieved), errpos, nsym)
-function fillerased!(recieved::Poly, errpos::AbstractVector, nsym::Int)
+fillerased(received::Poly, errpos::AbstractVector, nsym::Int) = fillerased!(copy(received), errpos, nsym)
+function fillerased!(received::Poly, errpos::AbstractVector, nsym::Int)
     ## number of errors exceeds limitation of the RS-code
     length(errpos) > nsym && throw(ReedSolomonError())
 
     ## syndrome polynomial S(x)
-    sydpoly = syndrome_polynomial(recieved, nsym) 
+    sydpoly = syndrome_polynomial(received, nsym) 
     
     ## error locator polynomial
     errloc = erratalocator_polynomial(errpos)
@@ -192,20 +192,20 @@ function fillerased!(recieved::Poly, errpos::AbstractVector, nsym::Int)
     forneyden(k) = polynomial_eval(errderi, gfpow2(-k)) ## denominator
     errvals = @. divide(forneynum(errpos), forneyden(errpos))
     ### correct errors
-    recieved.coeff[1 .+ errpos] .⊻= errvals
-    return recieved
+    received.coeff[1 .+ errpos] .⊻= errvals
+    return received
 end
 
 """
-    BMdecoder(recieved::Poly, nsym::Int)
+    BMdecoder(received::Poly, nsym::Int)
 
 Berlekamp-Massey algorithm, decode message polynomial from received polynomial(without erasures).
 """
-BMdecoder(recieved::Poly, nsym::Int) = BMdecoder!(copy(recieved), nsym)
-function BMdecoder!(recieved::Poly, nsym::Int)
+BMdecoder(received::Poly, nsym::Int) = BMdecoder!(copy(received), nsym)
+function BMdecoder!(received::Poly, nsym::Int)
     ## syndrome polynomial S(x)
-    sydpoly = syndrome_polynomial(recieved, nsym)
-    iszeropoly(sydpoly) && return recieved ## no errors
+    sydpoly = syndrome_polynomial(received, nsym)
+    iszeropoly(sydpoly) && return received ## no errors
 
     ## error locator polynomial
     errloc = erratalocator_polynomial(sydpoly, nsym)
@@ -226,16 +226,16 @@ function BMdecoder!(recieved::Poly, nsym::Int)
     forneyden(k) = polynomial_eval(errderi, gfpow2(-k)) ## denominator
     errvals = @. divide(forneynum(errpos), forneyden(errpos))
     ### correct errors
-    recieved.coeff[1 .+ errpos] .⊻= errvals
-    return recieved
+    received.coeff[1 .+ errpos] .⊻= errvals
+    return received
 end
 
 """
-    BMdecoder(recieved::Poly, erasures::AbstractVector, nsym::Int)
+    BMdecoder(received::Poly, erasures::AbstractVector, nsym::Int)
 
 Decode message polynomial from received polynomial(with erasures).
 """
-# BMdecoder(recieved::Poly, erasures::AbstractVector, nsym::Int) = BMdecoder!(copy(recieved), erasures, nsym)
+# BMdecoder(received::Poly, erasures::AbstractVector, nsym::Int) = BMdecoder!(copy(received), erasures, nsym)
 # function BMdecoder!(msg::Poly, erasures::AbstractVector, nsym::Int)
 #     ## reduce cases
 #     isempty(erasures) && return BMdecoder!(msg, nsym)

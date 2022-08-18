@@ -61,27 +61,27 @@ end
 end
 
 @testset "Syndrome decoding" begin
-    ## fillerased(recieved::Poly, errpos::AbstractVector, n::Int)
+    ## fillerased(received::Poly, errpos::AbstractVector, n::Int)
     ### raw message -- HELLO WORLD
     rawmsg = Poly(reverse!([0x40, 0xd2, 0x75, 0x47, 0x76, 0x17, 0x32, 0x06,
     0x27, 0x26, 0x96, 0xc6, 0xc6, 0x96, 0x70, 0xec]))
     n = 10
     msg = rawmsg << n + geterrorcorrection(rawmsg, n)
-    ### recieved message
-    recieved = copy(msg)
+    ### received message
+    received = copy(msg)
     errpos = [0, 10, 20]
-    recieved.coeff[1 .+ errpos] = [6, 7, 8]
-    @test fillerased(recieved, errpos, n) == msg
+    received.coeff[1 .+ errpos] = [6, 7, 8]
+    @test fillerased(received, errpos, n) == msg
 
     ### original message -- random
     fdeg, n = rand(1:200), 55
     rawmsg = randpoly(fdeg)
     msg = rawmsg << n + geterrorcorrection(rawmsg, n)
-    ### recieved message
+    ### received message
     errpos = unique!(rand(1:fdeg, 55))
-    recieved = copy(msg)
-    recieved.coeff[1 .+ errpos] .⊻= rand(1:255, length(errpos))
-    @test fillerased(recieved, errpos, n) == msg
+    received = copy(msg)
+    received.coeff[1 .+ errpos] .⊻= rand(1:255, length(errpos))
+    @test fillerased(received, errpos, n) == msg
     
     ### error exceeds limitation
     fdeg, n = rand(1:200), 10
@@ -118,20 +118,20 @@ end
 end
 
 @testset "Berlekamp-Massey-algorithm" begin
-    ## erratalocator_polynomial(recieved::Poly, nsym::Int)
-    ## BMdecoder(recieved::Poly, nsym::Int)
+    ## erratalocator_polynomial(received::Poly, nsym::Int)
+    ## BMdecoder(received::Poly, nsym::Int)
     ### number of errors within the capacity of RS-Code
     rawmsg = randpoly(155)
     nsym = 100
     errpos = unique!(rand(0:254, 50)) # error positions
     msg = rawmsg << nsym + geterrorcorrection(rawmsg, nsym)
-    recieved = copy(msg)
-    recieved.coeff[1 .+ errpos] .⊻= rand(1:255, length(errpos))
-    sydpoly = syndrome_polynomial(recieved, nsym)
+    received = copy(msg)
+    received.coeff[1 .+ errpos] .⊻= rand(1:255, length(errpos))
+    sydpoly = syndrome_polynomial(received, nsym)
     Λx = erratalocator_polynomial(sydpoly, nsym)
     errloc = erratalocator_polynomial(errpos)
     @test Λx == errloc
-    @test BMdecoder(recieved, nsym) == msg
+    @test BMdecoder(received, nsym) == msg
 
     ### no errors
     sydpoly = syndrome_polynomial(msg, nsym)
@@ -144,24 +144,24 @@ end
     nsym = 155
     errpos = unique!(rand(0:254, 77)) # error positions
     msg = rawmsg << nsym + geterrorcorrection(rawmsg, nsym)
-    recieved = copy(msg)
-    recieved.coeff[1 .+ errpos] .⊻= rand(1:255, length(errpos))
-    sydpoly = syndrome_polynomial(recieved, nsym)
+    received = copy(msg)
+    received.coeff[1 .+ errpos] .⊻= rand(1:255, length(errpos))
+    sydpoly = syndrome_polynomial(received, nsym)
     Λx = erratalocator_polynomial(sydpoly, nsym)
     errloc = erratalocator_polynomial(errpos)
     @test Λx == errloc
-    @test BMdecoder(recieved, nsym) == msg
+    @test BMdecoder(received, nsym) == msg
 
     ### too much errors(detected)
     rawmsg = randpoly(100)
     nsym = 155
     errpos = rand(0:176) .+ collect(0:78) # error positions
     msg = rawmsg << nsym + geterrorcorrection(rawmsg, nsym)
-    recieved = copy(msg)
-    recieved.coeff[1 .+ errpos] .⊻= rand(1:255, length(errpos))
-    sydpoly = syndrome_polynomial(recieved, nsym)
+    received = copy(msg)
+    received.coeff[1 .+ errpos] .⊻= rand(1:255, length(errpos))
+    sydpoly = syndrome_polynomial(received, nsym)
     @test_throws ReedSolomonError erratalocator_polynomial(sydpoly, nsym; check=true)
-    @test_throws ReedSolomonError BMdecoder(recieved, nsym)
+    @test_throws ReedSolomonError BMdecoder(received, nsym)
     
     ### too much errors(undetected!)
     ### [0] -encode> [0, 0, 0] -transfer> [2, 3, 0] -correct> [2, 3, 1] -decode> [1] 
@@ -169,14 +169,14 @@ end
     nsym = 2
     msg = rawmsg << nsym + geterrorcorrection(rawmsg, nsym)
     errpos = [0, 1]
-    recieved = copy(msg)
-    recieved.coeff[1 .+ errpos] .⊻= [2, 3]
+    received = copy(msg)
+    received.coeff[1 .+ errpos] .⊻= [2, 3]
     errloc = erratalocator_polynomial(errpos)
-    sydpoly = syndrome_polynomial(recieved, nsym)
+    sydpoly = syndrome_polynomial(received, nsym)
     Λx = erratalocator_polynomial(sydpoly, nsym; check=true)
     @test !iszeropoly(errloc + Λx)
     @test Λx == erratalocator_polynomial([2])
-    @test !iszeropoly(BMdecoder(recieved, nsym) + msg)
+    @test !iszeropoly(BMdecoder(received, nsym) + msg)
 
     ## BMdecoder with erasures
 end
