@@ -17,16 +17,7 @@ Calculate the Hamming distance between two elements.
 """
 hamming_distance(x::AbstractVector, y::AbstractVector) = hamming_weight(x - y)
 hamming_distance(x::Integer, y::Integer) = hamming_weight(x ⊻ y)
-function hamming_distance(x::Poly, y::Poly)
-    ## the lengths of x and y might not equal
-    xl, yl = length(x), length(y)
-    xl == yl && return hamming_weight(x.coeff - y.coeff)
-    if xl > yl ## make sure xl ≤ yl
-        x, y = y, x
-        xl, yl = yl, xl
-    end
-    return hamming_weight(y.coeff - vcat(x.coeff, zeros(Int, yl - xl)))
-end
+hamming_distance(x::Poly, y::Poly) = hamming_weight(x.coeff - y.coeff)
 
 ## Functions about encoding & decoding
 """

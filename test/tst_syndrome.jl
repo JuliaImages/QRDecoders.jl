@@ -1,10 +1,10 @@
 # Tests for syndrome decoding
 
-## Functions about syndrome polynomial
-@testset "Syndrome polynomials" begin
+## Functions for polynomials
+@testset "Operators for polynomials" begin
     ## polynomial_eval(p::Poly, x::Int)
     ### take values at 0 and 1
-    p = randpoly(rand(1:255))
+    p = randpoly(1:255)
     @test polynomial_eval(p, 1) == reduce(⊻, p.coeff)
     @test polynomial_eval(p, 0) == first(p.coeff)
     ### polynomial of degree ≤ 3
@@ -25,10 +25,10 @@
     syd = syndrome_polynomial(msg, n) # syndrome polynomial
     @test syd.coeff == [64, 192, 93, 231, 52, 92, 228, 49, 83, 245]
     @test haserrors(msg, n)
-    errloc = erratalocator_polynomial([0]) # error locator polynomial
-    evlpoly = evaluator_polynomial(syd, errloc, n) # evaluator polynomial
+    errlocpoly = erratalocator_polynomial([0]) # error locator polynomial
+    evlpoly = evaluator_polynomial(syd, errlocpoly, n) # evaluator polynomial
     xn = Poly(push!(zeros(Int, n), 1)) ## xn = x^n
-    @test iszeropoly(evlpoly + syd * errloc % xn)
+    @test iszeropoly(evlpoly + syd * errlocpoly % xn)
 
     ## erratalocator_polynomial(errpos::AbstractVector)
     nerr = rand(1:255) # number of errors
@@ -37,61 +37,9 @@
     locpoly = erratalocator_polynomial(errpos)
     @test all(iszero, polynomial_eval.(Ref(locpoly), polyroots)) && length(locpoly) == nerr + 1
     @test erratalocator_polynomial(Int[]) == Poly([1])
-end
-
-## Detect errors
-@testset "Errors dectecting" begin
-    ## haserrors(msg::Poly, n::Int)
-    ### RS-Code can detect up to n errors
-    ### message without errors
-    f, n = randpoly(rand(1:127)), rand(1:127)
-    msg = f << n + geterrorcorrection(f, n)
-    @test !haserrors(msg, n)
-
-    ### message with one error
-    msg.coeff[rand(eachindex(msg.coeff))] ⊻= rand(1:255)
-    @test haserrors(msg, n)
-
-    ### message with ≤n errors
-    n = rand(10:127)
-    msg = f << n + geterrorcorrection(f, n)
-    errors = unique!(rand(eachindex(msg.coeff), n))
-    msg.coeff[errors] = (⊻).(msg.coeff[errors], rand(1:255, length(errors)))
-    @test haserrors(msg, n)
-end
-
-@testset "Syndrome decoding" begin
-    ## fillerased(received::Poly, errpos::AbstractVector, n::Int)
-    ### raw message -- HELLO WORLD
-    rawmsg = Poly(reverse!([0x40, 0xd2, 0x75, 0x47, 0x76, 0x17, 0x32, 0x06,
-    0x27, 0x26, 0x96, 0xc6, 0xc6, 0x96, 0x70, 0xec]))
-    n = 10
-    msg = rawmsg << n + geterrorcorrection(rawmsg, n)
-    ### received message
-    received = copy(msg)
-    errpos = [0, 10, 20]
-    received.coeff[1 .+ errpos] = [6, 7, 8]
-    @test fillerased(received, errpos, n) == msg
-
-    ### original message -- random
-    fdeg, n = rand(1:200), 55
-    rawmsg = randpoly(fdeg)
-    msg = rawmsg << n + geterrorcorrection(rawmsg, n)
-    ### received message
-    errpos = unique!(rand(1:fdeg, 55))
-    received = copy(msg)
-    received.coeff[1 .+ errpos] .⊻= rand(1:255, length(errpos))
-    @test fillerased(received, errpos, n) == msg
-    
-    ### error exceeds limitation
-    fdeg, n = rand(1:200), 10
-    errpos = collect(1:11)
-    rawmsg = randpoly(fdeg)
-    msg = rawmsg << n + geterrorcorrection(rawmsg, n)
-    @test_throws ReedSolomonError fillerased(msg, errpos, n)
 
     ## reducebyHorner(p::Poly, a::Int)
-    p, a = randpoly(rand(1:255)), rand(0:255)
+    p, a = randpoly(1:255), rand(0:255)
     qx = reducebyHorner(p, a)
     qeval = popfirst!(qx.coeff)
     @test qeval == polynomial_eval(p, a)
@@ -108,18 +56,81 @@ end
     @test isempty(findroots(pdup))
     @test isempty(findroots(Poly([1,0,1]))) ## (x - 1)²
 
-    ## getposition(Λx::Poly)
+    ## getpositions(Λx::Poly)
     positions = sort!(unique!(rand(0:254, rand(1:255))))
     Λx = erratalocator_polynomial(positions)
-    @test sort!(getposition(Λx)) == positions
+    @test sort!(getpositions(Λx)) == positions
     positions = collect(0:254)
     Λx = erratalocator_polynomial(positions)
-    @test sort!(getposition(Λx)) == positions
+    @test sort!(getpositions(Λx)) == positions
 end
 
-@testset "Berlekamp-Massey-algorithm" begin
+## Detect errors
+@testset "Errors dectecting" begin
+    ## haserrors(msg::Poly, n::Int)
+    ### RS-Code can detect up to n errors
+    ### message without errors
+    f, n = randpoly(1:127), rand(1:127)
+    msg = f << n + geterrorcorrection(f, n)
+    @test !haserrors(msg, n)
+
+    ### message with one error
+    msg.coeff[rand(eachindex(msg.coeff))] ⊻= rand(1:255)
+    @test haserrors(msg, n)
+
+    ### message with ≤n errors
+    n = rand(10:127)
+    msg = f << n + geterrorcorrection(f, n)
+    errors = unique!(rand(eachindex(msg.coeff), n))
+    msg.coeff[errors] = (⊻).(msg.coeff[errors], rand(1:255, length(errors)))
+    @test haserrors(msg, n)
+end
+
+## fillerasures
+@testset "Fill erasures" begin
+    ## fillerasures(received::Poly, errpos::AbstractVector, n::Int)
+    ### raw message -- HELLO WORLD
+    rawmsg = Poly(reverse!([0x40, 0xd2, 0x75, 0x47, 0x76, 0x17, 0x32, 0x06,
+    0x27, 0x26, 0x96, 0xc6, 0xc6, 0x96, 0x70, 0xec]))
+    n = 10
+    msg = rawmsg << n + geterrorcorrection(rawmsg, n)
+    ### received message
+    received = copy(msg)
+    errpos = [0, 10, 20]
+    received.coeff[1 .+ errpos] = [6, 7, 8]
+    @test fillerasures(received, errpos, n) == msg
+    @test fillerasures(received, vcat(errpos, [1, 2, 3]), n) == msg
+
+    ### random test
+    fdeg, n = rand(1:200), 55
+    rawmsg = randpoly(fdeg)
+    msg = rawmsg << n + geterrorcorrection(rawmsg, n)
+    ### received message
+    errpos = sample(0:(n + fdeg - 1), 55; replace=false)
+    received = copy(msg)
+    received.coeff[1 .+ errpos] .⊻= rand(1:255, length(errpos))
+    @test fillerasures(received, errpos, n) == msg
+    
+    ### error exceeds limitation
+    n = 10
+    errpos = collect(1:11)
+    rawmsg = randpoly(1:20)
+    msg = rawmsg << n + geterrorcorrection(rawmsg, n)
+    @test_throws ReedSolomonError fillerasures(msg, errpos, n)
+
+    ### no errors
+    n = 55
+    rawmsg = randpoly(200)
+    msg = rawmsg << n + geterrorcorrection(rawmsg, n)
+    errpos = unique!(rand(0:254, 55))
+    @test fillerasures(msg, errpos, n) == msg
+    @test fillerasures(msg, Int[], n) == msg
+end
+
+@testset "BMdecoder -- without erasures" begin
     ## erratalocator_polynomial(received::Poly, nsym::Int)
     ## BMdecoder(received::Poly, nsym::Int)
+
     ### number of errors within the capacity of RS-Code
     rawmsg = randpoly(155)
     nsym = 100
@@ -129,8 +140,8 @@ end
     received.coeff[1 .+ errpos] .⊻= rand(1:255, length(errpos))
     sydpoly = syndrome_polynomial(received, nsym)
     Λx = erratalocator_polynomial(sydpoly, nsym)
-    errloc = erratalocator_polynomial(errpos)
-    @test Λx == errloc
+    errlocpoly = erratalocator_polynomial(errpos)
+    @test Λx == errlocpoly
     @test BMdecoder(received, nsym) == msg
 
     ### no errors
@@ -148,14 +159,14 @@ end
     received.coeff[1 .+ errpos] .⊻= rand(1:255, length(errpos))
     sydpoly = syndrome_polynomial(received, nsym)
     Λx = erratalocator_polynomial(sydpoly, nsym)
-    errloc = erratalocator_polynomial(errpos)
-    @test Λx == errloc
+    errlocpoly = erratalocator_polynomial(errpos)
+    @test Λx == errlocpoly
     @test BMdecoder(received, nsym) == msg
 
     ### too much errors(detected)
     rawmsg = randpoly(100)
     nsym = 155
-    errpos = rand(0:176) .+ collect(0:78) # error positions
+    errpos = sample(0:254, 78; replace=false) # error positions
     msg = rawmsg << nsym + geterrorcorrection(rawmsg, nsym)
     received = copy(msg)
     received.coeff[1 .+ errpos] .⊻= rand(1:255, length(errpos))
@@ -171,12 +182,15 @@ end
     errpos = [0, 1]
     received = copy(msg)
     received.coeff[1 .+ errpos] .⊻= [2, 3]
-    errloc = erratalocator_polynomial(errpos)
+    errlocpoly = erratalocator_polynomial(errpos)
     sydpoly = syndrome_polynomial(received, nsym)
     Λx = erratalocator_polynomial(sydpoly, nsym; check=true)
-    @test !iszeropoly(errloc + Λx)
+    @test !iszeropoly(errlocpoly + Λx)
     @test Λx == erratalocator_polynomial([2])
     @test !iszeropoly(BMdecoder(received, nsym) + msg)
+end
 
-    ## BMdecoder with erasures
+@testset "BMdecoder -- with erasures" begin
+    ## test failed
+    ## The modified Forney syndromes is still debugging
 end

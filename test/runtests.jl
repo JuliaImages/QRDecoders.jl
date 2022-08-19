@@ -1,13 +1,13 @@
 using QRDecoders
 using Test
+using StatsBase: sample
 using QRCoders
-import QRCoders: formatinfo
-import QRCoders.Polynomial: mult, geterrorcorrection, gfpow2, iszeropoly, gflog2, unit
-import QRDecoders: hamming_weight, hamming_distance, qrformat, qrdecode_format, quality2binary, ReedSolomonError
-import QRDecoders.Syndrome: polynomial_eval, syndrome_polynomial, haserrors, fillerased,
+using QRCoders: formatinfo
+using QRCoders.Polynomial: mult, geterrorcorrection, gfpow2, iszeropoly, gflog2, unit, euclidean_divide
+using QRDecoders: hamming_weight, hamming_distance, qrformat, qrdecode_format, quality2binary, ReedSolomonError
+using QRDecoders.Syndrome: polynomial_eval, syndrome_polynomial, haserrors, fillerasures,
                             derivative_polynomial, erratalocator_polynomial, evaluator_polynomial,
-                            findroots, reducebyHorner, getposition, BMdecoder
-
+                            findroots, reducebyHorner, getpositions, BMdecoder
 
 """
     randpoly(n::Int)

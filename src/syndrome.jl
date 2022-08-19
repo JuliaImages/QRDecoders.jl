@@ -56,7 +56,8 @@ end
 """
     findroots(p::Poly)
 
-Computes the roots of the polynomial p using Horner's method. Returns a empty list if p(x) contains duplicate roots or roots not in GF(256).
+Computes the roots of the polynomial p using Horner's method.
+Returns a empty list if p(x) contains duplicate roots or roots not in GF(256).
 """
 function findroots(p::Poly)
     n = length(p) - 1
@@ -74,29 +75,52 @@ function findroots(p::Poly)
 end
 
 """
-    getposition(Λx::Poly)
+    getpositions(Λx::Poly)
 
 Caculate positions of errors from the error locator polynomial Λx.
+Note that the indexs start from 0.
 """
-getposition(Λx::Poly) = mod.(-gflog2.(findroots(Λx)), 255)
+getpositions(Λx::Poly) = mod.(-gflog2.(findroots(Λx)), 255)
 
 """
-    syndrome_polynomial(message::Poly, n::Int)
+    syndrome_polynomial(received::Poly, nsym::Int)
 
-Computes the syndrome polynomial S(x) for the message polynomial where n is the number of syndromes.
+Computes the syndrome polynomial S(x) for the received polynomial where `nsym` is the number of syndromes.
 """
-function syndrome_polynomial(msg::Poly, n::Int)
+function syndrome_polynomial(received::Poly, nsym::Int)
     ## S(x) = ∑ᵢsᵢxⁱ where sᵢ = R(2ⁱ) = E(2ⁱ)
-    syndromes = polynomial_eval.(Ref(msg), gfpow2.(0:(n-1)))
+    syndromes = polynomial_eval.(Ref(received), gfpow2.(0:(nsym-1)))
     return Poly(syndromes)
 end
 
 """
-    haserrors(msg::Poly, n::Int)
+    modified_syndrome(syndpoly::Poly, erasures::AbstractVector)
 
-Returns true if the message polynomial has errors. (may go undetected when the number of errors exceeds n)
+Computes the modified syndrome polynomial.
 """
-haserrors(msg::Poly, n::Int) = !iszeropoly(syndrome_polynomial(msg, n))
+modified_syndrome(sydpoly::Poly, erasures::AbstractVector) = modified_syndrome!(copy(sydpoly), erasures)
+function modified_syndrome!(sydpoly::Poly, erasures::AbstractVector)
+    n = length(sydpoly)
+    S = sydpoly.coeff
+    for i in erasures, j in 1:(n - 1)
+        S[j] = mult(gfpow2(i), S[j]) ⊻ S[j+1]
+    end
+    sydpoly
+end
+
+"""
+    evaluator_polynomial(sydpoly::Poly, errlocpoly::Poly, nsym::Int)
+
+Return the evaluator polynomial Ω(x) where Ω(x)≡S(x)Λ(x) mod xⁿ.
+"""
+evaluator_polynomial(sydpoly::Poly, errlocpoly::Poly, nsym::Int) = Poly((sydpoly * errlocpoly).coeff[1:nsym])
+
+"""
+    haserrors(received::Poly, nsym::Int)
+
+Returns true if the received polynomial has errors. (may go undetected when the number of errors exceeds n)
+"""
+haserrors(received::Poly, nsym::Int) = !iszeropoly(syndrome_polynomial(received, nsym))
 
 """
     erratalocator_polynomial(errpos::AbstractVector)
@@ -109,69 +133,63 @@ function erratalocator_polynomial(errpos::AbstractVector)
 end
 
 """
-    erratalocator_polynomial(sydpoly::Poly, n::Int; check=false)
+    erratalocator_polynomial(sydpoly::Poly, nsym::Int; check=false)
 
-Berlekamp-Massey algorithm, compute the error locator polynomial Λ(x). The `check`` tag ensures that Λx can be decomposed into products of one degree polynomials.
+Compute the error locator polynomial Λ(x)(without erasures).
+The `check` tag ensures that Λx can be decomposed into products of one degree polynomials.
 """
-function erratalocator_polynomial(sydpoly::Poly, nsym::Int; check=false)
-    iszeropoly(sydpoly) && return unit(Poly) ## no errors
-    ## syndromes
-    S = sydpoly.coeff
-
-    ## initialize
-    L = 0 # number of errors
-    x = Poly([0, 1])
-    Λx = unit(Poly) # error locator polynomial
-    Bx = copy(Λx) # copy of the last Λx since L is updated
-
-    ## discrepancy Δᵣ = Λ₀Sᵣ₋₁ + Λ₁Sᵣ₋₂ + ⋯ 
-    getdelta(r) = @views reduce(⊻, mult(i, j) for (i, j) in zip(S[r:-1:1], Λx.coeff))
-
-    ## iteration
-    for r in 1:nsym
-        Δ = getdelta(r)
-        if Δ == 0 || 2 * L > r - 1 # δ = 0
-            Λx, Bx = Λx + Δ * x * Bx, x * Bx
-        else # δ = 1
-            L = r - L
-            Λx, Bx = Λx + Δ * x * Bx, gfinv(Δ) * Λx
-        end
-    end
-    Λx = rstripzeros(Λx)
-
-    ## number of errors exceeds limitation of the RS-code
-    if iszeropoly(Λx) || length(Λx) - 1 > nsym ÷ 2 
-        throw(ReedSolomonError())
-    end
-
-    ## check if the error locator polynomial is a product of one degree polynomials
-    check && isempty(getposition(Λx)) && throw(ReedSolomonError())
-    return Λx
-end
+erratalocator_polynomial(sydpoly::Poly, nsym::Int; check=false) = erratalocator_polynomial(sydpoly, Int[], nsym; check=check)
 
 """
     erratalocator_polynomial(sydpoly::Poly, erasures::AbstractVector, n::Int)
 
-Berlekamp-Massey algorithm, compute the error locator polynomial Λ(x) given the erasures positions.
+Berlekamp-Massey algorithm, compute the error locator polynomial Λ(x)(given the erased positions).
+The `check` tag ensures that Λx can be decomposed into products of one degree polynomials.
 """
-# function erratalocator_polynomial(sydpoly::Poly, erasures::AbstractVector, nsym::Int)
+function erratalocator_polynomial(sydpoly::Poly, erasures::AbstractVector, nsym::Int; check=false)
+    ## syndromes
+    S = sydpoly.coeff
+    ## initialize via erased data
+    L = ρ = length(erasures) ## number of erased data
+    Λx = erratalocator_polynomial(erasures) ## erased locator polynomial
+    Bx = copy(Λx)
+    x = Poly([0, 1])
+
+    ## discrepancy Δᵣ = Λ₀Sᵣ₋₁ + Λ₁Sᵣ₋₂ + ⋯ 
+    getdelta(r) = @views reduce(⊻, mult(i, j) for (i, j) in zip(S[r:-1:1], Λx.coeff))
     
-# end
+    ## iteration
+    for r in (ρ + 1):nsym
+        Δ = getdelta(r)
+        if Δ == 0 || 2 * L > r + ρ - 1 # condition updates
+            Λx, Bx = Λx + Δ * x * Bx, x * Bx
+        else # δ = 1
+            L = r - L - ρ
+            Λx, Bx = Λx + Δ * x * Bx, gfinv(Δ) * Λx
+        end
+    end
+    Λx = rstripzeros(Λx)
+    
+    ## number of errors exceeds limitation of the RS-code
+    v = length(Λx) - 1 - ρ # number of errors
+    if iszeropoly(Λx) || 2 * v + ρ > nsym
+        throw(ReedSolomonError())
+    end
+    
+    ## check if the error locator polynomial is a product of one degree polynomials
+    check && isempty(getpositions(Λx)) && throw(ReedSolomonError())
+    return Λx
+end
 
 """
-    evaluator_polynomial(syd::Poly, errloc::Poly, n::Int)
-
-Return the evaluator polynomial Ω(x) where Ω(x)≡S(x)Λ(x) mod xⁿ.
-"""
-evaluator_polynomial(syd::Poly, errloc::Poly, n::Int) = Poly((syd * errloc).coeff[1:n])
-
-"""
-    fillerased(msg::Poly, errpos::AbstractVector, nsym::Int)
+    fillerasures(received::Poly, errpos::AbstractVector, nsym::Int)
 
 Forney algorithm, computes the values (error magnitude) to correct the input message.
+
+Warnning: The output polynomial might be incorrect if `errpos` is incomplete.
 """
-fillerased(received::Poly, errpos::AbstractVector, nsym::Int) = fillerased!(copy(received), errpos, nsym)
-function fillerased!(received::Poly, errpos::AbstractVector, nsym::Int)
+fillerasures(received::Poly, errpos::AbstractVector, nsym::Int) = fillerasures!(copy(received), errpos, nsym)
+function fillerasures!(received::Poly, errpos::AbstractVector, nsym::Int)
     ## number of errors exceeds limitation of the RS-code
     length(errpos) > nsym && throw(ReedSolomonError())
 
@@ -179,12 +197,51 @@ function fillerased!(received::Poly, errpos::AbstractVector, nsym::Int)
     sydpoly = syndrome_polynomial(received, nsym) 
     
     ## error locator polynomial
-    errloc = erratalocator_polynomial(errpos)
+    errlocpoly = erratalocator_polynomial(errpos)
     ## derivative of error locator polynomial
-    errderi = derivative_polynomial(errloc)
+    errderi = derivative_polynomial(errlocpoly)
     
     ## evaluator polynomial Ω(x)≡S(x)Λ(x) mod xⁿ
-    evlpoly = evaluator_polynomial(sydpoly, errloc, nsym)
+    evlpoly = evaluator_polynomial(sydpoly, errlocpoly, nsym)
+    
+    ## computes error magnitudes using Forney algorithm
+    ### e_k = \frac{2^{i_k}⋅Ω(2^{-i_k})} {Λ'(2^{-i_k})}
+    forneynum(k) = mult(gfpow2(k), polynomial_eval(evlpoly, gfpow2(-k))) ## numerator
+    forneyden(k) = polynomial_eval(errderi, gfpow2(-k)) ## denominator
+    errvals = @. divide(forneynum(errpos), forneyden(errpos))
+    ### correct errors
+    received.coeff[1 .+ errpos] .⊻= errvals
+    return received
+end
+
+"""
+    BMdecoder(received::Poly, erasures::AbstractVector, nsym::Int)
+
+Berlekamp-Massey algorithm, decode message polynomial from received polynomial(given erasures).
+"""
+BMdecoder(received::Poly, erasures::AbstractVector, nsym::Int) = BMdecoder!(copy(received), erasures, nsym)
+
+function BMdecoder!(received::Poly, erasures::AbstractVector, nsym::Int)
+    ## check data
+    length(received) > 255 && throw(DomainError(received, "length of received polynomial must be less than 256"))
+    length(erasures) > nsym && throw(ReedSolomonError())
+
+    ## syndrome polynomial S(x)
+    sydpoly = syndrome_polynomial(received, nsym)
+    iszeropoly(sydpoly) && return received ## no errors
+
+    ## error locator polynomial
+    errlocpoly = erratalocator_polynomial(sydpoly, erasures, nsym)
+
+    ## error positions
+    errpos = getpositions(errlocpoly)
+    isempty(errpos) && throw(ReedSolomonError())
+
+    ## derivative of the error locator polynomial
+    errderi = derivative_polynomial(errlocpoly)
+
+    ## evaluator polynomial Ω(x)≡S(x)Λ(x) mod xⁿ
+    evlpoly = evaluator_polynomial(sydpoly, errlocpoly, nsym)
     
     ## computes error magnitudes using Forney algorithm
     ### e_k = \frac{2^{i_k}⋅Ω(2^{-i_k})} {Λ'(2^{-i_k})}
@@ -201,47 +258,6 @@ end
 
 Berlekamp-Massey algorithm, decode message polynomial from received polynomial(without erasures).
 """
-BMdecoder(received::Poly, nsym::Int) = BMdecoder!(copy(received), nsym)
-function BMdecoder!(received::Poly, nsym::Int)
-    ## syndrome polynomial S(x)
-    sydpoly = syndrome_polynomial(received, nsym)
-    iszeropoly(sydpoly) && return received ## no errors
-
-    ## error locator polynomial
-    errloc = erratalocator_polynomial(sydpoly, nsym)
-
-    ## error positions
-    errpos = getposition(errloc)
-    isempty(errpos) && throw(ReedSolomonError())
-
-    ## derivative of the error locator polynomial
-    errderi = derivative_polynomial(errloc)
-
-    ## evaluator polynomial Ω(x)≡S(x)Λ(x) mod xⁿ
-    evlpoly = evaluator_polynomial(sydpoly, errloc, nsym)
-    
-    ## computes error magnitudes using Forney algorithm
-    ### e_k = \frac{2^{i_k}⋅Ω(2^{-i_k})} {Λ'(2^{-i_k})}
-    forneynum(k) = mult(gfpow2(k), polynomial_eval(evlpoly, gfpow2(-k))) ## numerator
-    forneyden(k) = polynomial_eval(errderi, gfpow2(-k)) ## denominator
-    errvals = @. divide(forneynum(errpos), forneyden(errpos))
-    ### correct errors
-    received.coeff[1 .+ errpos] .⊻= errvals
-    return received
-end
-
-"""
-    BMdecoder(received::Poly, erasures::AbstractVector, nsym::Int)
-
-Decode message polynomial from received polynomial(with erasures).
-"""
-# BMdecoder(received::Poly, erasures::AbstractVector, nsym::Int) = BMdecoder!(copy(received), erasures, nsym)
-# function BMdecoder!(msg::Poly, erasures::AbstractVector, nsym::Int)
-#     ## reduce cases
-#     isempty(erasures) && return BMdecoder!(msg, nsym)
-
-#     ## with erasures
-#     ## wait to do
-# end
+BMdecoder(received::Poly, nsym::Int) = BMdecoder!(copy(received), Int[], nsym)
 
 end
