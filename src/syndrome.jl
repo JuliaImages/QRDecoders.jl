@@ -182,6 +182,20 @@ function erratalocator_polynomial(sydpoly::Poly, erasures::AbstractVector, nsym:
 end
 
 """
+    forney_algorithm(Λx::Poly, Ωx::Poly, errpos::AbstractVector)
+
+Forney algorithm, returns the error-corrected values.
+eₖ = 2^{iₖ}⋅Ω(2^{-iₖ}) / Λ'(2^{-iₖ})
+"""
+function forney_algorithm(Λx::Poly, Ωx::Poly, errpos::AbstractVector)
+    ## derivative of the error locator polynomial
+    errderi = derivative_polynomial(Λx)
+    forneynum(k) = mult(gfpow2(k), polynomial_eval(Ωx, gfpow2(-k))) ## numerator
+    forneyden(k) = polynomial_eval(errderi, gfpow2(-k)) ## denominator
+    return @. divide(forneynum(errpos), forneyden(errpos))
+end
+
+"""
     fillerasures(received::Poly, errpos::AbstractVector, nsym::Int)
 
 Forney algorithm, computes the values (error magnitude) to correct the input message.
@@ -197,20 +211,13 @@ function fillerasures!(received::Poly, errpos::AbstractVector, nsym::Int)
     sydpoly = syndrome_polynomial(received, nsym) 
     
     ## error locator polynomial
-    errlocpoly = erratalocator_polynomial(errpos)
-    ## derivative of error locator polynomial
-    errderi = derivative_polynomial(errlocpoly)
+    Λx = erratalocator_polynomial(errpos)
     
     ## evaluator polynomial Ω(x)≡S(x)Λ(x) mod xⁿ
-    evlpoly = evaluator_polynomial(sydpoly, errlocpoly, nsym)
+    Ωx = evaluator_polynomial(sydpoly, Λx, nsym)
     
-    ## computes error magnitudes using Forney algorithm
-    ### e_k = \frac{2^{i_k}⋅Ω(2^{-i_k})} {Λ'(2^{-i_k})}
-    forneynum(k) = mult(gfpow2(k), polynomial_eval(evlpoly, gfpow2(-k))) ## numerator
-    forneyden(k) = polynomial_eval(errderi, gfpow2(-k)) ## denominator
-    errvals = @. divide(forneynum(errpos), forneyden(errpos))
-    ### correct errors
-    received.coeff[1 .+ errpos] .⊻= errvals
+    ## computes error magnitudes using Forney algorithm 
+    received.coeff[1 .+ errpos] .⊻= forney_algorithm(Λx, Ωx, errpos)
     return received
 end
 
@@ -231,25 +238,17 @@ function BMdecoder!(received::Poly, erasures::AbstractVector, nsym::Int)
     iszeropoly(sydpoly) && return received ## no errors
 
     ## error locator polynomial
-    errlocpoly = erratalocator_polynomial(sydpoly, erasures, nsym)
+    Λx = erratalocator_polynomial(sydpoly, erasures, nsym)
 
     ## error positions
-    errpos = getpositions(errlocpoly)
+    errpos = getpositions(Λx)
     isempty(errpos) && throw(ReedSolomonError())
 
-    ## derivative of the error locator polynomial
-    errderi = derivative_polynomial(errlocpoly)
-
     ## evaluator polynomial Ω(x)≡S(x)Λ(x) mod xⁿ
-    evlpoly = evaluator_polynomial(sydpoly, errlocpoly, nsym)
+    Ωx = evaluator_polynomial(sydpoly, Λx, nsym)
     
     ## computes error magnitudes using Forney algorithm
-    ### e_k = \frac{2^{i_k}⋅Ω(2^{-i_k})} {Λ'(2^{-i_k})}
-    forneynum(k) = mult(gfpow2(k), polynomial_eval(evlpoly, gfpow2(-k))) ## numerator
-    forneyden(k) = polynomial_eval(errderi, gfpow2(-k)) ## denominator
-    errvals = @. divide(forneynum(errpos), forneyden(errpos))
-    ### correct errors
-    received.coeff[1 .+ errpos] .⊻= errvals
+    received.coeff[1 .+ errpos] .⊻= forney_algorithm(Λx, Ωx, errpos)
     return received
 end
 

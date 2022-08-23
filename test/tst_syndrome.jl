@@ -191,6 +191,18 @@ end
 end
 
 @testset "BMdecoder -- with erasures" begin
-    ## test failed
-    ## The modified Forney syndromes is still debugging
+    ## -- The modified Forney syndromes is still debugging -- ##
+
+    ### length of the received message is too long
+    rawmsg = randpoly(100)
+    nsym = 156
+    msg = rawmsg << nsym + geterrorcorrection(rawmsg, nsym)
+    @test_throws DomainError BMdecoder(msg, nsym)
+    
+    ### number of erasures exceeds the capacity of RS-Code
+    rawmsg = randpoly(150)
+    nsym = 50
+    msg = rawmsg << nsym + geterrorcorrection(rawmsg, nsym)
+    erasures = sample(0:199, 51; replace=false)
+    @test_throws ReedSolomonError BMdecoder(msg, erasures, nsym)
 end

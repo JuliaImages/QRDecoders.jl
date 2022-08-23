@@ -1,8 +1,5 @@
 module QRDecoders
 using QRCoders
-using QRCoders.Polynomial: Poly
-
-export Poly
 
 struct ReedSolomonError <: Exception
     st::AbstractString
@@ -11,7 +8,6 @@ end
 
 include("qrinfo.jl")
 include("syndrome.jl")
-
-
+include("euclidean.jl")
 
 end
