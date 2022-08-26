@@ -93,9 +93,9 @@ version = "0.9.1"
 
 [[Documenter]]
 deps = ["ANSIColoredPrinters", "Base64", "Dates", "DocStringExtensions", "IOCapture", "InteractiveUtils", "JSON", "LibGit2", "Logging", "Markdown", "REPL", "Test", "Unicode"]
-git-tree-sha1 = "ee945ed10767de73cf8b610951b98228cb65af80"
+git-tree-sha1 = "6030186b00a38e9d0434518627426570aac2ef95"
 uuid = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
-version = "0.27.22"
+version = "0.27.23"
 
 [[Downloads]]
 deps = ["ArgTools", "LibCURL", "NetworkOptions"]
@@ -354,7 +354,7 @@ version = "1.0.0"
 
 [[QRCoders]]
 deps = ["FileIO", "ImageCore", "ImageIO"]
-git-tree-sha1 = "643df08aa57c31c2e8deec9f1f36c597742c575d"
+git-tree-sha1 = "a0f46646f8aadac6721a0126b561d56c6e0f24cd"
 repo-rev = "dev"
 repo-url = "https://github.com/RexWzh/QRCoders.jl"
 uuid = "f42e9828-16f3-11ed-2883-9126170b272d"

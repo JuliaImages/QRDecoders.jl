@@ -2,9 +2,10 @@ using QRDecoders
 using Test
 using StatsBase: sample
 using QRCoders
-using QRCoders: formatinfo
+using QRCoders: formatinfo, versioninfo, qrcode
 using QRCoders.Polynomial: mult, geterrorcorrection, gfpow2, iszeropoly, gflog2, unit, euclidean_divide, divide
-using QRDecoders: hamming_weight, hamming_distance, qrformat, qrdecode_format, quality2binary, ReedSolomonError
+using QRDecoders: hamming_weight, hamming_distance, qrversion, qrdecode_version, qrformat, qrdecode_format, quality2binary, 
+                  ReedSolomonError,  InfoError
                   
 using QRDecoders.Syndrome: polynomial_eval, syndrome_polynomial, haserrors, fillerasures,
                             derivative_polynomial, erratalocator_polynomial, evaluator_polynomial,
