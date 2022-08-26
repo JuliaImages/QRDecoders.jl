@@ -1,8 +1,13 @@
 module QRDecoders
+using QRCoders
 
-export Poly
+struct ReedSolomonError <: Exception
+    st::AbstractString
+    ReedSolomonError() = new("Number of errors exceeds the limitation of the RS-code")
+end
 
-using QRCode
-import QRCode: Poly
+include("qrinfo.jl")
+include("syndrome.jl")
+include("euclidean.jl")
 
 end

@@ -11,13 +11,13 @@ hamming_weight(x::AbstractVector) = count(!iszero, x)
 hamming_weight(x::Integer) = hamming_weight(digits(x; base=2))
 
 """
-    hamming_distance(x::Poly, y::Poly)
+    hamming_distance(x, y)
 
-Calculate the Hamming distance between two polynomials.
+Calculate the Hamming distance between two elements.
 """
-hamming_distance(x::Poly, y::Poly) = hamming_distance(x.coeff, y.coeff)
 hamming_distance(x::AbstractVector, y::AbstractVector) = hamming_weight(x - y)
 hamming_distance(x::Integer, y::Integer) = hamming_weight(x ⊻ y)
+hamming_distance(x::Poly, y::Poly) = hamming_weight(x.coeff - y.coeff)
 
 ## Functions about encoding & decoding
 """
