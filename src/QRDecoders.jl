@@ -8,6 +8,5 @@ end
 
 include("qrinfo.jl")
 include("syndrome.jl")
-include("euclidean.jl")
 
 end
