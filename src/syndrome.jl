@@ -98,15 +98,15 @@ end
 
 Computes the modified syndrome polynomial.
 """
-modified_syndrome(sydpoly::Poly, erasures::AbstractVector) = modified_syndrome!(copy(sydpoly), erasures)
-function modified_syndrome!(sydpoly::Poly, erasures::AbstractVector)
-    n = length(sydpoly)
-    S = sydpoly.coeff
-    for i in erasures, j in 1:(n - 1)
-        S[j] = mult(gfpow2(i), S[j]) ⊻ S[j+1]
-    end
-    sydpoly
-end
+# modified_syndrome(sydpoly::Poly, erasures::AbstractVector) = modified_syndrome!(copy(sydpoly), erasures)
+# function modified_syndrome!(sydpoly::Poly, erasures::AbstractVector)
+#     n = length(sydpoly)
+#     S = sydpoly.coeff
+#     for i in erasures, j in 1:(n - 1)
+#         S[j] = mult(gfpow2(i), S[j]) ⊻ S[j+1]
+#     end
+#     sydpoly
+# end
 
 """
     evaluator_polynomial(sydpoly::Poly, errlocpoly::Poly, nsym::Int)

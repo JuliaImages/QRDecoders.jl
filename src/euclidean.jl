@@ -1,7 +1,6 @@
-# Extended Euclidean division algorithm
-using QRDecoders: ReedSolomonError
+# Extended Euclidean division algorithmt
 using QRCoders.Polynomial: iszeropoly, degree, euclidean_divide, rstripzeros
-using QRDecoders.Syndrome: erratalocator_polynomial, syndrome_polynomial, getpositions, polynomial_eval, forney_algorithm
+using QRDecoders.Syndrome: erratalocator_polynomial, syndrome_polynomial, getpositions, forney_algorithm
 
 """
     extended_euclidean_divide(r₁::Poly, r₂::Poly)
