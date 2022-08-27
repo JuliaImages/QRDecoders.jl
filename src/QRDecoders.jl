@@ -14,7 +14,7 @@ The QR-matrix is invalid.
 """
 struct InfoError <: Exception
     st::AbstractString
-    InfoError() = new("Invalid format information")
+    InfoError() = new("Invalid QR-Patterns")
     InfoError(st) = new(st)
 end
 

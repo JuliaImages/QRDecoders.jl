@@ -13,6 +13,7 @@
         end
     end
     @test tag
+    @test qrversion.(7:40) == qrversion.(0x07:0x28)
     @test_throws InfoError qrversion(6)
     @test_throws InfoError qrversion(41)
     ## distance of the Version-Code
@@ -85,6 +86,7 @@ end
         end
     end
     @test tag
+    @test qrformat.(0:31) == qrformat.(0x00:0x1f)
     @test_throws InfoError qrformat(-1)
     @test_throws InfoError qrformat(32)
     ## distance of the Format-Code
