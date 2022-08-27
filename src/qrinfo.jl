@@ -5,7 +5,7 @@
 ### 3. error correction level and mask pattern
 ### 4. extract data bits
 
-using QRCoders: finderpattern, alignmentpattern, alignmentlocation, makemasks, emptymatrix
+using QRCoders: finderpattern, alignmentpattern, alignmentlocation, makemask, emptymatrix, bitarray2int
 
 ## Hamming distance
 """
@@ -92,8 +92,8 @@ function qrdecode_version(mat::AbstractMatrix; noerror=false)
     ## get version from the version string
     leftdown = mat[m-10:m-8, 1:6][:] # left-down block
     righttop = mat[1:6, m-10:m-8]'[:] # right-top block
-    ldint = parse(Int, reverse(join(Int.(leftdown))); base=2) # bit string => integer
-    rtint = parse(Int, reverse(join(Int.(righttop))); base=2) # bit string => integer
+    # bit string => integer
+    ldint, rtint = (bitarray2int ∘ reverse!).([leftdown, righttop])
     v == qrdecode_version(ldint) || throw(InfoError("Version information(leftdown) not match"))
     v == qrdecode_version(rtint) || throw(InfoError("Version information(righttop) not match"))
     noerror && (ldint != rtint || qrversion(v) != ldint) && throw(InfoError("The QR-Code contains errors"))
@@ -141,9 +141,8 @@ function qrdecode_format(fmt_code::Int)::Int
     return fmt_info
 end
 
-
 """
-Bit modes of the quality.
+Bit modes of the qualities.
 """
 quality2binary = Dict(
     Low() => 0b01,
@@ -153,7 +152,7 @@ quality2binary = Dict(
 binary2quality = Dict(val=>key for (key, val) in quality2binary)
 
 """
-    qrdecode_format(mat::AbstractMatrix)
+    qrdecode_format(mat::AbstractMatrix; noerror=false)
 
 Return the format of the QR-Code(ErrCorrLevel + mask).
 """
@@ -162,18 +161,18 @@ function qrdecode_format(mat::AbstractMatrix; noerror=false)
     lefttop = vcat(mat[9, 1:6], mat[9, 8:9], mat[8,9], mat[6:-1:1, 9])
     ## down bar and right bar
     rightdown = vcat(mat[end:-1:end-6, 9], mat[9, end-7:end])
-    ltint = foldl((i, j) -> (i << 1 ⊻ j), lefttop) # bit array => integer
-    rdint = foldl((i, j) -> (i << 1 ⊻ j), rightdown) # bit array => integer
-    ltfmt = qrdecode_format(ltint)
-    rdfmt = qrdecode_format(rdint)
-    ltfmt != rdfmt && throw(InfoError("Invalid format information"))
+    # bitarray => integer
+    ltint, rdint = bitarray2int(lefttop), bitarray2int(rightdown)
+    # decode format
+    ltfmt, rdfmt = qrdecode_format(ltint), qrdecode_format(rdint)
+    (ltfmt == -1 || ltfmt != rdfmt) && throw(InfoError("Invalid format information"))
     noerror && (ltint != rdint || qrformat(ltfmt) != ltint) && throw(InfoError("The QR-Code contains errors"))
     ec, mask = ltfmt >> 3, ltfmt % 8
     return binary2quality[ec], mask
 end
 
 ### --- division line --- ###
-## Data Bits
+## Extract Databits
 
 """
     extract_databits(mat::AbstractMatrix, datapos::AbstractMatrix)
@@ -182,7 +181,7 @@ Extract data bits from the QR-Code.(Inverse procedure of placedata!)
 """
 function extract_databits(mat::AbstractMatrix, datapos::AbstractMatrix)
     n = size(mat, 1)
-    data = BitArray{1}(count(datapos))
+    data = BitArray{1}(undef, count(datapos))
     col, row, cur = n, n + 1, 1
     while col > 0
         # Skip the column with the timing pattern
@@ -217,13 +216,13 @@ function extract_databits(mat::AbstractMatrix, datapos::AbstractMatrix)
 end
 
 ### --- division line --- ###
-## decomposition of the QR-Code
+## Decomposition of the QR-Code
 """
     qrdecompose(mat::AbstractMatrix)
 
 Decompose the QR-Code into its constituent parts.
 """
-qrdecompose(mat::AbstractMatrix; noerror=false) = qrdecompose(copy(mat); noerror=noerror)
+qrdecompose(mat::AbstractMatrix; noerror=false) = qrdecompose!(copy(mat); noerror=noerror)
 function qrdecompose!(mat::AbstractMatrix; noerror=false)
     ## Version Information
     v = qrdecode_version(mat;noerror=noerror)
@@ -233,14 +232,13 @@ function qrdecompose!(mat::AbstractMatrix; noerror=false)
     ec, mask = qrdecode_format(mat;noerror=noerror)
 
     ## get mask matrix
-    emptymat = emptymatrix(version) # place nothing on data-bits
+    emptymat = emptymatrix(v) # place nothing on data-bits
     datapos = (emptymat .== nothing) # positions of the data-bits
-    maskmat = makemasks(emptymat)[mask] # mask matrix that will be applied to data-bits
-    @assert !any(maskmat[(!).(datapos)]) "mask-bit should be zero at non-data position"
+    maskmat = makemask(emptymat, mask + 1) # mask that will be applied to data-bits
 
     ## check Patterns: Finder Pattern, Alignment Pattern, Timing Pattern and Dark Mode
     ## set nothing on Version Information and Format Information
-    if v >= 7
+    if v ≥ 7
         emptymat[1:6, n - 10:n - 8] .= nothing
         emptymat[n - 10:n - 8, 1:6] .= nothing
     end
@@ -259,12 +257,3 @@ function qrdecompose!(mat::AbstractMatrix; noerror=false)
     databits = extract_databits(mat, datapos)
     return v, ec, mask, databits
 end
-
-"""
-    correct_messages(databits::AbstractMatrix, ec::ErrCorrLevel)
-
-Correct the data bits.
-"""
-# function correct_message(databits::AbstractMatrix, ec::ErrCorrLevel)
-#    
-# end

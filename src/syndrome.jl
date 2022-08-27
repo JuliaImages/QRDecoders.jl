@@ -14,7 +14,7 @@
 module Syndrome
 
 using QRCoders.Polynomial: mult, Poly, gfpow2, gflog2, gfinv, divide, unit,
-                          iszeropoly, rstripzeros, degree, euclidean_divide
+                           iszeropoly, rstripzeros, degree, euclidean_divide
 using QRDecoders: ReedSolomonError
 
 ###### --- division line --- ######
