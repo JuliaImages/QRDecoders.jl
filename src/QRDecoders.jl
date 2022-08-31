@@ -2,6 +2,8 @@ module QRDecoders
 using QRCoders
 
 """
+    ReedSolomonError <: Exception
+
 An error occurs during error-correction.
 """
 struct ReedSolomonError <: Exception
@@ -10,7 +12,12 @@ struct ReedSolomonError <: Exception
 end
 
 """
-The QR-matrix is invalid.
+    InfoError <: Exception
+
+The non-data part of QR-matrix contains error.
+
+For example, Finder pattern, Alignment pattern, Timing pattern, 
+Format information, Version information, matrix size and etc.
 """
 struct InfoError <: Exception
     st::AbstractString
@@ -18,15 +25,27 @@ struct InfoError <: Exception
     InfoError(st) = new(st)
 end
 
+"""
+    DecodeError <: Exception
+
+Errors while decoding message.
+The data part of QR-matrix contains error.
+"""
+struct DecodeError <: Exception
+    st::AbstractString
+    DecodeError(st) = new(st)
+end
+
 mutable struct QRInfo
     version::Int # version info(1 ≤ v ≤ 40)
     eclevel::ErrCorrLevel # error correction level(High, Low, Medium, Quartile)
     mask::Int # mask pattern(0-7)
     mode::Mode # encoding mode: Numeric, Alphanumeric, Byte, Kanji
-    data::AbstractString # decoded data
+    message::AbstractString # decoded data
 end
 
 include("qrinfo.jl")
 include("syndrome.jl")
+include("qrdecode.jl")
 
 end

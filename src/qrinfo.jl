@@ -144,12 +144,12 @@ end
 """
 Bit modes of the qualities.
 """
-quality2binary = Dict(
+mode2bin = Dict(
     Low() => 0b01,
     Medium() => 0b00,
     Quartile() => 0b11,
     High() => 0b10)
-binary2quality = Dict(val=>key for (key, val) in quality2binary)
+bin2mode = Dict(val=>key for (key, val) in mode2bin)
 
 """
     qrdecode_format(mat::AbstractMatrix; noerror=false)
@@ -168,7 +168,7 @@ function qrdecode_format(mat::AbstractMatrix; noerror=false)
     (ltfmt == -1 || ltfmt != rdfmt) && throw(InfoError("Invalid format information"))
     noerror && (ltint != rdint || qrformat(ltfmt) != ltint) && throw(InfoError("The QR-Code contains errors"))
     ec, mask = ltfmt >> 3, ltfmt % 8
-    return binary2quality[ec], mask
+    return bin2mode[ec], mask
 end
 
 ### --- division line --- ###
