@@ -115,3 +115,37 @@ end
     info = qrdecode(mat; noerror=false)
     @test info.message == msg && info.version == version && info.mode == mode && info.eclevel == eclevel
 end
+
+
+@testset "Message Decoding" begin
+    ## test cases from https://www.thonky.com/qr-code-tutorial/
+    ## Numeric
+    msg = "8675309"
+    bits = parse.(Bool, collect("110110001110000100101001"))
+    @test decodemessage(bits, length(msg), Numeric()) == msg
+
+    ## Alphanumeric
+    msg = "HELLO WORLD"
+    txt = "0110000101101111000110100010111001011011100010011010100001101"
+    bits = parse.(Bool, collect(txt))
+    @test decodemessage(bits, length(msg), Alphanumeric()) == msg
+
+    ## Byte
+
+    ## Kanji
+
+    # --- random test --- #
+    ## Numeric
+    msg = join(rand(0:9, rand(1:5596)))
+    bits = encodedata(msg, Numeric())
+    @test decodemessage(bits, length(msg), Numeric()) == msg
+
+    ## Alphanumeric
+    msg = join(rand(keys(alphanumeric), rand(1:3391)))
+    bits = encodedata(msg, Alphanumeric())
+    @test decodemessage(bits, length(msg), Alphanumeric()) == msg
+
+    ## Byte
+
+    ## Kanji
+end

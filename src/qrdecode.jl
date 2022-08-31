@@ -5,12 +5,9 @@
 ### 3. decode message
 ### 4. pack up the informations
 
-using QRCoders: ecblockinfo, int2bitarray, getecblock, remainderbits, charactercountlength
+using QRCoders: ecblockinfo, int2bitarray, getecblock, remainderbits, 
+                charactercountlength, antialphanumeric
 using .Syndrome: euclidean_decoder
-
-"""
-   bits2bytes 
-"""
 
 """
     deinterleave(bytes::AbstractVector, ec::ErrCorrLevel, version::Int)
@@ -86,7 +83,7 @@ end
 Decode the message from bit-data.
 """
 function decodemessage(bits::AbstractVector, msglen::Int, ::Numeric)
-    nthrees, rem = (msglen ÷ 3), msglen % 3
+    nthrees, rem = msglen ÷ 3, msglen % 3
     ## main part of the integers
     bitlen1 = nthrees * 10
     ints1 = [bitarray2int(@view(bits[i:i+9])) for i in 1:10:bitlen1]
@@ -94,6 +91,23 @@ function decodemessage(bits::AbstractVector, msglen::Int, ::Numeric)
     ## remain part
     rem == 0 && return str1
     return str1 * string(bitarray2int(@view(bits[bitlen1 + 1:bitlen1 + 1 + rem * 3]));pad=rem)
+end
+
+function decodemessage(bits::AbstractVector, msglen::Int, ::Alphanumeric)
+    ntwos, rem = msglen >> 1, msglen & 1
+    ## main part of the integers
+    bitlen1 = ntwos * 11
+    ints1 = [bitarray2int(@view(bits[i:i+10])) for i in 1:11:bitlen1]
+    function int2str(k::Int)
+        head, tail = k ÷ 45, k % 45
+        return antialphanumeric[head] * antialphanumeric[tail]
+    end
+    str1 = join(int2str.(ints1))
+    ## remain part
+    rem == 0 && return str1
+    remnum = bitarray2int(@view(bits[bitlen1 + 1:bitlen1 + 6]))
+    println(remnum)
+    return str1 * antialphanumeric[remnum]
 end
 
 function qrdecode(mat::AbstractMatrix; noerror=false)
