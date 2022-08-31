@@ -66,12 +66,12 @@ end
     mat = rand(Bool, 21, 25)
     @test_throws DimensionMismatch qrdecode_version(mat)
 
-    mat = qrcode("HELLO WORLD", Low(); compact=true)
+    mat = qrcode("HELLO WORLD", eclevel = Low(), compact=true)
     @test qrdecode_version(mat) == 1
     ## low degree
     tag = true
     for v in 1:6
-        mat = qrcode("HELLO WORLD", Low(); compact=true, version=v)
+        mat = qrcode("HELLO WORLD", eclevel = Low(), compact=true, version=v)
         if qrdecode_version(mat;noerror=true) != v
             tag = false
             break
@@ -81,7 +81,7 @@ end
     ## higher degree
     tag = true
     for v in 7:40
-        mat = qrcode("HELLO WORLD", High(); compact=true, version=v)
+        mat = qrcode("HELLO WORLD", eclevel = High(), compact=true, version=v)
         if qrdecode_version(mat;noerror=true) != v
             tag = false
             break
@@ -94,7 +94,7 @@ end
     ## format encoding
     tag = true
     for ((qua, mask), val) in formatinfo
-        fmt = quality2binary[qua] << 3 ⊻ mask
+        fmt = mode2bin[qua] << 3 ⊻ mask
         fmt_code = qrformat(fmt)
         val = parse(Int, join(Int.(val)); base=2)
         if qrdecode_format(fmt_code) != fmt || fmt_code != val
@@ -129,19 +129,19 @@ end
     @test fmt_info == fmt_decode_info
 
     ## get format from QR-matrix
-    mat = qrcode("HELLO WORLD", Low(); compact=true)
+    mat = qrcode("HELLO WORLD", eclevel = Low(), compact=true)
     ec, mask = qrdecode_format(mat; noerror=true)
     @test ec == Low() && mask == 0
 
-    mat = qrcode("HELLO WORLD", Medium(); compact=true)
+    mat = qrcode("HELLO WORLD", eclevel = Medium(), compact=true)
     ec, mask = qrdecode_format(mat; noerror=true)
     @test ec == Medium() && mask == 0
 
-    mat = qrcode("HELLO WORLD", Quartile(); compact=true)
+    mat = qrcode("HELLO WORLD", eclevel = Quartile(), compact=true)
     ec, mask = qrdecode_format(mat; noerror=true)
     @test ec == Quartile() && mask == 3
 
-    mat = qrcode("HELLO WORLD", High(); compact=true)
+    mat = qrcode("HELLO WORLD", eclevel = High(), compact=true)
     ec, mask = qrdecode_format(mat; noerror=true)
     @test ec == High() && mask == 5
 end
@@ -152,25 +152,25 @@ end
     msg = "HELLO WORLD"
     eclevel = Low()
     msgbits = encodemessage(msg, Alphanumeric(), eclevel, 1)
-    mat = qrcode(msg, eclevel; compact=true)
+    mat = qrcode(msg, eclevel = eclevel, compact=true)
     v, ec, mask, databits = qrdecompose(mat; noerror=true)
     @test databits == msgbits && v == 1 && ec == eclevel && mask == 0
 
     eclevel = Medium()
     msgbits = encodemessage(msg, Alphanumeric(), eclevel, 1)
-    mat = qrcode(msg, eclevel; compact=true)
+    mat = qrcode(msg, eclevel = eclevel, compact=true)
     v, ec, mask, databits = qrdecompose(mat; noerror=true)
     @test databits == msgbits && v == 1 && ec == eclevel && mask == 0
 
     eclevel = Quartile()
     msgbits = encodemessage(msg, Alphanumeric(), eclevel, 1)
-    mat = qrcode(msg, eclevel; compact=true)
+    mat = qrcode(msg, eclevel = eclevel, compact=true)
     v, ec, mask, databits = qrdecompose(mat; noerror=true)
     @test databits == msgbits && v == 1 && ec == eclevel && mask == 3
 
     eclevel = High()
     msgbits = encodemessage(msg, Alphanumeric(), eclevel, 2)
-    mat = qrcode(msg, eclevel; compact=true)
+    mat = qrcode(msg, eclevel = eclevel, compact=true)
     v, ec, mask, databits = qrdecompose(mat; noerror=true)
     @test databits == msgbits && v == 2 && ec == eclevel && mask == 5
 

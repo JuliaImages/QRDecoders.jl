@@ -18,15 +18,24 @@ struct InfoError <: Exception
     InfoError(st) = new(st)
 end
 
+"""
+Errors while decoding message.
+"""
+struct DecodeError <: Exception
+    st::AbstractString
+    DecodeError(st) = new(st)
+end
+
 mutable struct QRInfo
     version::Int # version info(1 ≤ v ≤ 40)
     eclevel::ErrCorrLevel # error correction level(High, Low, Medium, Quartile)
     mask::Int # mask pattern(0-7)
     mode::Mode # encoding mode: Numeric, Alphanumeric, Byte, Kanji
-    data::AbstractString # decoded data
+    message::AbstractString # decoded data
 end
 
 include("qrinfo.jl")
 include("syndrome.jl")
+include("qrdecode.jl")
 
 end
