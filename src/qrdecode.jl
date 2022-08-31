@@ -6,7 +6,7 @@
 ### 4. pack up the informations
 
 using QRCoders: ecblockinfo, int2bitarray, getecblock, remainderbits, 
-                charactercountlength, antialphanumeric
+                charactercountlength, antialphanumeric, antikanji
 using .Syndrome: euclidean_decoder
 
 """
@@ -108,6 +108,11 @@ function decodemessage(bits::AbstractVector, msglen::Int, ::Alphanumeric)
     remnum = bitarray2int(@view(bits[bitlen1 + 1:bitlen1 + 6]))
     println(remnum)
     return str1 * antialphanumeric[remnum]
+end
+
+function decodemessage(bits::AbstractVector, msglen::Int, ::Kanji)
+    ints = [bitarray2int(@view(bits[i:i+12])) for i in 1:13:msglen * 13]
+    return join(getindex.(Ref(antikanji), ints))
 end
 
 function qrdecode(mat::AbstractMatrix; noerror=false)

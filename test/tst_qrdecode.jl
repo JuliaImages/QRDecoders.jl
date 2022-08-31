@@ -131,8 +131,12 @@ end
     @test decodemessage(bits, length(msg), Alphanumeric()) == msg
 
     ## Byte
-
+    
     ## Kanji
+    msg = "茗荷"
+    bits = parse.(Bool, collect("11010101010100011010010111"))
+    @test decodemessage(bits, length(msg), Kanji()) == msg
+
 
     # --- random test --- #
     ## Numeric
@@ -148,4 +152,8 @@ end
     ## Byte
 
     ## Kanji
+    msg = join(rand(keys(kanji), rand(1:1435)))
+    bits = encodedata(msg, Kanji())
+    @test decodemessage(bits, length(msg), Kanji()) == msg
+
 end
