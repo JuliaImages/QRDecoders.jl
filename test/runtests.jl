@@ -5,11 +5,11 @@ using QRCoders
 using QRCoders: formatinfo, versioninfo, encodemessage, qrcode, emptymatrix, makemasks, getcharactercountindicator,
                 encodedata, padencodedmessage, makeblocks, getecblock, interleave, placedata!, modeindicators, 
                 ecblockinfo, penalty, addformat, bitarray2int, int2bitarray, charactercountlength, getmode, 
-                remainderbits, alphanumeric, kanji
+                remainderbits, alphanumeric, kanji, characterscapacity, issubset
 using QRCoders.Polynomial: mult, geterrorcorrection, gfpow2, iszeropoly, gflog2, unit, euclidean_divide, divide
 using QRDecoders: hamming_weight, hamming_distance, qrversion, qrdecode_version, qrformat, qrdecode_format, mode2bin, 
                   ReedSolomonError, InfoError, extract_databits, qrdecompose, deinterleave, correct_message, 
-                  block2bits, decodemode, decodemessage, qrdecode
+                  block2bits, decodemode, decodedata, qrdecode
                   
 using QRDecoders.Syndrome: polynomial_eval, syndrome_polynomial, haserrors, fillerasures,
                             derivative_polynomial, erratalocator_polynomial, evaluator_polynomial,

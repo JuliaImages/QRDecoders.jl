@@ -78,11 +78,11 @@ function decodemode(bits::AbstractVector)
 end
 
 """
-    decodemessage(bits::AbstractVector, msglen::Int, ::Mode)
+    decodedata(bits::AbstractVector, msglen::Int, ::Mode)
 
 Decode the message from bit-data.
 """
-function decodemessage(bits::AbstractVector, msglen::Int, ::Numeric)
+function decodedata(bits::AbstractVector, msglen::Int, ::Numeric)
     nthrees, rem = msglen ÷ 3, msglen % 3
     ## main part of the integers
     bitlen1 = nthrees * 10
@@ -93,7 +93,7 @@ function decodemessage(bits::AbstractVector, msglen::Int, ::Numeric)
     return str1 * string(bitarray2int(@view(bits[bitlen1 + 1:bitlen1 + 1 + rem * 3]));pad=rem)
 end
 
-function decodemessage(bits::AbstractVector, msglen::Int, ::Alphanumeric)
+function decodedata(bits::AbstractVector, msglen::Int, ::Alphanumeric)
     ntwos, rem = msglen >> 1, msglen & 1
     ## main part of the integers
     bitlen1 = ntwos * 11
@@ -106,20 +106,40 @@ function decodemessage(bits::AbstractVector, msglen::Int, ::Alphanumeric)
     ## remain part
     rem == 0 && return str1
     remnum = bitarray2int(@view(bits[bitlen1 + 1:bitlen1 + 6]))
-    println(remnum)
     return str1 * antialphanumeric[remnum]
 end
 
-function decodemessage(bits::AbstractVector, msglen::Int, ::Kanji)
+function decodedata(bits::AbstractVector, msglen::Int, ::Kanji)
     ints = [bitarray2int(@view(bits[i:i+12])) for i in 1:13:msglen * 13]
     return join(getindex.(Ref(antikanji), ints))
 end
 
-function qrdecode(mat::AbstractMatrix; noerror=false)
+function decodedata(bits::AbstractVector, msglen::Int, ::Byte)
+    ints = [bitarray2int(@view(bits[i:i+7])) for i in 1:8:msglen * 8]
+    return join(Char.(ints))
+end
+
+function decodedata(bits::AbstractVector, msglen::Int, ::UTF8)
+    nbytes = length(bits) >> 3
+    bytes = @views UInt8[bitarray2int(bits[(i - 1) * 8 + 1:i * 8]) for i in 1:nbytes]
+    ## warning -- the performance of the following code need to be improved
+    return join(collect(String(bytes))[1:msglen])
+end
+
+"""
+    qrdecode(mat::AbstractMatrix; noerror::Bool=false, utf8::Bool=false)
+
+QR Code decoder.
+"""
+function qrdecode(mat::AbstractMatrix
+                ; noerror::Bool=false
+                , utf8::Bool=false)
+    # --- decompose --- #
     ## extract data bits from the QR-Matrix and 
     ## check whether the matrix is valid or not
     version, eclevel, mask, msgbits = qrdecompose(mat;noerror=noerror)
-
+    
+    # --- get encoded bits --- #
     ## bits => bytes
     nbits = length(msgbits)
     nrb = remainderbits[version] # number of remainder bits
@@ -128,36 +148,45 @@ function qrdecode(mat::AbstractMatrix; noerror=false)
     nbytes = nbits >> 3
     bytes = bitarray2int.([@view(msgbits[(i - 1) * 8 + 1:i * 8]) for i in 1:nbytes])
 
-    ## bits ==de-interleave=> blocks & ecblocks
+    ## bytes ==de-interleave=> blocks & ecblocks
     msgblocks, ecblocks = deinterleave(bytes, eclevel, version)
     ncodewords = length(first(ecblocks))
 
     ## msgblocks & ecblocks ==error correct=> corrected message blocks
-    dmsgblocks = correct_message.(msgblocks, ecblocks)
-    ## require the code to contain no errors
+    crr_msgblocks = correct_message.(msgblocks, ecblocks)
+
+    ## require the data bits to contain no errors
     if noerror
-        dmsgblocks != msgblocks && throw(DecodeError("Data-bits of the QR-Code contain errors"))
-        decblocks = getecblock.(dmsgblocks, ncodewords)
+        crr_msgblocks != msgblocks && throw(DecodeError("Data-bits of the QR-Code contain errors"))
+        decblocks = getecblock.(crr_msgblocks, ncodewords)
         decblocks != ecblocks && throw(DecodeError("Data-bits of the QR-Code contain errors"))
     end
-    
-    ## encoded bits
-    encoded = vcat(block2bits.(dmsgblocks)...)
+
+    ## encoded = mode indicator + character count indicator + message bits
+    ##         + pad bits(terminate + pad to multiple of 8 + repeated pattern)
+    encoded = vcat(block2bits.(crr_msgblocks)...)
 
     ## extract format info of the encoded bits
-    ## message = mode indicator + character count indicator + encoded data
-    modeind = @view(encoded[1:4])
-    mode = decodemode(modeind) # mode: Numeric, Alphanumeric, Byte, Kanji
+    modeind = @view(encoded[1:4]) # mode indicator
+    mode = decodemode(modeind) # Numeric, Alphanumeric, Byte, Kanji
     i = (version ≥ 1) + (version ≥ 10) + (version ≥ 27)
     cclength = charactercountlength[mode][i] # length of the char-count-indicator
     ccindicator = encoded[5:5 + cclength - 1] # character count indicator
+
     ## get message length from the c-c-indicator
     msglen = bitarray2int(ccindicator)
-    ## start position of the encoded bits
+
+    # --- decode message --- #
+    ## start position of the message bits
     startpos = 4 + cclength + 1
-
+    messagebits = @view(encoded[startpos:end])
     ## decode message
-    msg = decodemessage(@view(encoded[startpos:end]), msglen, mode)
+    if utf8 ## indicate that the message is encoded in UTF-8
+        mode != Byte() && throw(DecodeError("The QRCode is not encoded in UTF-8 or Byte mode"))
+        mode = UTF8()
+    end
+    msg = decodedata(messagebits, msglen, mode)
 
+    ## pack up the result
     return QRInfo(version, eclevel, mask, mode, msg)
 end
