@@ -9,7 +9,7 @@ using QRCoders: formatinfo, versioninfo, encodemessage, qrcode, emptymatrix, mak
 using QRCoders.Polynomial: mult, geterrorcorrection, gfpow2, iszeropoly, gflog2, unit, euclidean_divide, divide
 using QRDecoders: hamming_weight, hamming_distance, qrversion, qrdecode_version, qrformat, qrdecode_format, mode2bin, 
                   ReedSolomonError, InfoError, extract_databits, qrdecompose, deinterleave, correct_message, 
-                  block2bits, decodemode, decodedata, qrdecode, trybyte, tryutf8
+                  block2bits, decodemode, decodedata, qrdecode, trybyte, tryutf8, DecodeError
                   
 using QRDecoders.Syndrome: polynomial_eval, syndrome_polynomial, haserrors, fillerasures,
                             derivative_polynomial, erratalocator_polynomial, evaluator_polynomial,

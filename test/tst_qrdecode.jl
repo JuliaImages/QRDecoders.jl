@@ -217,6 +217,12 @@ end
     msg = "123ø" # ø(0b1111 1000) is not a valid UTF8 byte
     bits = vcat(int2bitarray.(UInt8.(collect(msg)))...)
     @test !tryutf8(bits, 4)
+
+    mat = qrcode(msg, eclevel=Low(), compact=true)
+    info = qrdecode(mat; noerror=true)
+    @test info.mode == Byte() && info.eclevel == Low() && info.message == msg
+    
+    msg = "®123" # ®(0b10101110) can not be the first byte in UTF8
     mat = qrcode(msg, eclevel=Low(), compact=true)
     info = qrdecode(mat; noerror=true)
     @test info.mode == Byte() && info.eclevel == Low() && info.message == msg
@@ -236,4 +242,23 @@ end
               info.mode ⊆ mode &&
               info.eclevel == eclevel
     end
+end
+
+@testset "test throws" begin
+    ## unsupport mode
+    modeindicator = BitArray([0, 1, 1, 1]) ## ECI mode
+    @test_throws DecodeError decodemode(modeindicator)
+
+    ## invalid try
+    @test_throws DecodeError trybyte(BitArray(undef, 16), 2) ## missing terminate bits
+    @test_throws DecodeError trybyte(BitArray(undef, 16), 3) ## bits data is too short
+
+    ## modified Data
+    mat = qrcode("123";compact=true)
+    mat[1, 9] = !mat[1, 9] ## format info
+    @test_throws InfoError qrdecode(mat; noerror=true)
+    mat[1, 9] = !mat[1, 9]
+    
+    mat[1, 10] = !mat[1, 10]
+    @test_throws DecodeError qrdecode(mat; noerror=true)
 end
