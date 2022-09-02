@@ -325,7 +325,7 @@ version = "1.0.0"
 
 [[QRCoders]]
 deps = ["FileIO", "ImageCore", "ImageIO"]
-git-tree-sha1 = "99b9dcd4f418b126f6fc2c6f24e5569dc7f27d8d"
+git-tree-sha1 = "6ca4741ab9cadd811d4506828b0c3ae5e7ce1425"
 repo-rev = "dev"
 repo-url = "https://github.com/RexWzh/QRCoders.jl"
 uuid = "f42e9828-16f3-11ed-2883-9126170b272d"
