@@ -192,14 +192,17 @@ end
 
 ## pack up the information
 """
-    qrdecode(mat::AbstractMatrix; noerror::Bool=false, preferutf8=true)
+    qrdecode(mat::AbstractMatrix; noerror::Bool=false, preferutf8=true)::QRInfo
 
-QR Code decoder.
+QR code decoder.
 
-If `noerror` is `true` and the QR code needs error-correction, the decoder will raise an error.
-If `preferutf8` is `true`, the decoder will try to decode the message by `UTF8` mode first.
+If `noerror` is `true`, the decoder will raise an Exception(ReedSolomonError/InfoError)
+when the QR code `mat` needs error correction.
+
+If `preferutf8` is `true`, the decoder will try to decode the message by `UTF8` mode first
+when dealing with `Byte` mode.
 """
-function qrdecode(mat::AbstractMatrix; noerror::Bool=false, preferutf8=true)
+function qrdecode(mat::AbstractMatrix; noerror::Bool=false, preferutf8=true)::QRInfo
     # --- decompose --- #
     ## 1. extract data bits from the QR-Matrix and 
     ## 2. check whether the matrix is valid or not

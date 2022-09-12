@@ -85,8 +85,8 @@ function qrdecode_version(mat::AbstractMatrix; noerror=false)
     ## get version from size of the QR-matrix
     m, n = size(mat)
     m != n && throw(DimensionMismatch("matrix must be square"))
-    (iszero((m - 17) % 4) && 21 ≤ m ≤ 177) || throw(InfoError("Invalid matrix size"))
-    v = (m - 17) ÷ 4
+    (iszero((m - 17) & 3) && 21 ≤ m ≤ 177) || throw(InfoError("Invalid matrix size"))
+    v = (m - 17) >> 2
     v < 7 && return v
     ## v ≥ 7 => 6x3 rectangular blocks that contain the version Information
     ## get version from the version string

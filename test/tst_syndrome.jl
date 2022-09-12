@@ -39,7 +39,7 @@
     @test erratalocator_polynomial(Int[]) == Poly([1])
 
     ## reducebyHorner(p::Poly, a::Int)
-    p, a = randpoly(1:255), rand(0:255)
+    p, a = randpoly(2:255), rand(0:255)
     qx = reducebyHorner(p, a)
     qeval = popfirst!(qx.coeff)
     @test qeval == polynomial_eval(p, a)

@@ -1,4 +1,10 @@
 module QRDecoders
+
+export euclidean_decoder, ReedSolomonError
+export qrdecompose, InfoError
+export qrdecode, DecodeError
+export QRInfo
+
 using QRCoders
 
 """
@@ -46,5 +52,7 @@ end
 include("qrinfo.jl")
 include("syndrome.jl")
 include("qrdecode.jl")
+
+using .Syndrome: euclidean_decoder
 
 end
