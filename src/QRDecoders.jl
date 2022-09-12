@@ -1,4 +1,10 @@
 module QRDecoders
+
+export euclidean_decoder, ReedSolomonError
+export qrdecompose, InfoError
+export qrdecode, DecodeError
+export QRInfo
+
 using QRCoders
 
 """
@@ -12,6 +18,25 @@ struct ReedSolomonError <: Exception
 end
 
 """
+    ReedSolomonAlgorithm
+
+An abstract type for error correction algorithm of Reed Solomon code.
+"""
+abstract type ReedSolomonAlgorithm end
+"""
+    Euclidean <: ReedSolomonAlgorithm
+
+Euclidean algorithm for error correction.
+"""
+struct Euclidean <: ReedSolomonAlgorithm end
+"""
+    BerlekampMassey <: ReedSolomonAlgorithm
+
+Berlekamp-Massey algorithm for error correction.
+"""
+struct BerlekampMassey <: ReedSolomonAlgorithm end
+
+"""
     InfoError <: Exception
 
 The non-data part of QR-matrix contains error.
@@ -21,31 +46,29 @@ Format information, Version information, matrix size and etc.
 """
 struct InfoError <: Exception
     st::AbstractString
-    InfoError() = new("Invalid QR-Patterns")
-    InfoError(st) = new(st)
 end
 
 """
     DecodeError <: Exception
 
-Errors while decoding message.
 The data part of QR-matrix contains error.
 """
 struct DecodeError <: Exception
     st::AbstractString
-    DecodeError(st) = new(st)
 end
 
 mutable struct QRInfo
     version::Int # version info(1 ≤ v ≤ 40)
     eclevel::ErrCorrLevel # error correction level(High, Low, Medium, Quartile)
     mask::Int # mask pattern(0-7)
-    mode::Mode # encoding mode: Numeric, Alphanumeric, Byte, Kanji
+    mode::Mode # encoding mode: Numeric, Alphanumeric, Byte, Kanji, UTF8
     message::AbstractString # decoded data
 end
 
 include("qrinfo.jl")
 include("syndrome.jl")
 include("qrdecode.jl")
+
+using .Syndrome: euclidean_decoder
 
 end

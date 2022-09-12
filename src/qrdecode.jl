@@ -1,14 +1,18 @@
 # decode message from the QRCode
 ## outline
 ### 1. de-interleave the message
-### 2. correct message
-### 3. decode message
-### 4. pack up the informations
+### 2. correct and decode message
+### 3. pack up the informations
 
-using QRCoders: ecblockinfo, int2bitarray, getecblock, remainderbits, 
-                charactercountlength, antialphanumeric, antikanji, bits2bytes
-using .Syndrome: euclidean_decoder
+using QRCoders: 
+    # tables  
+    antialphanumeric, antikanji,
+    ecblockinfo, remainderbits, charactercountlength, 
+    # data convert
+    int2bitarray, bits2bytes
+using .Syndrome: RSdecoder
 
+## de-interleave the message
 """
     deinterleave(bytes::AbstractVector, ec::ErrCorrLevel, version::Int)
 
@@ -21,17 +25,20 @@ end
 
 function deinterleave(bytes::AbstractVector, ncodewords::Int, 
                       nb1::Int, nc1::Int, nb2::Int, nc2::Int)
-    blocks = vcat([Vector{Int}(undef, nc1) for _ in 1:nb1], [Vector{Int}(undef, nc2) for _ in 1:nb2])
+    ## blocks of group1 and group2
+    blocks = vcat([Vector{Int}(undef, nc1) for _ in 1:nb1],
+                  [Vector{Int}(undef, nc2) for _ in 1:nb2])
+    ## error correction blocks
     ecblocks = [Vector{Int}(undef, ncodewords) for _ in 1:(nb1 + nb2)]
+    
     ind = length(bytes) # index start from the end of the message
-
-    ## Error correction block
+    ## Error correction bytes
     for i in ncodewords:-1:1, j in (nb1 + nb2):-1:1
         ecblocks[j][i] = bytes[ind]
         ind -= 1
     end
     
-    ## Encoded block
+    ## Encoded bytes
     for i in nc2:-1:(1 + nc1), j in (nb1 + nb2):-1:(nb1 + 1)
         blocks[j][i] = bytes[ind]
         ind -= 1
@@ -40,22 +47,37 @@ function deinterleave(bytes::AbstractVector, ncodewords::Int,
         blocks[j][i] = bytes[ind]
         ind -= 1
     end
-    ind != 0 && throw(DecodeError("deinterleave: not all data is recorded"))
+    # ind != 0 && throw(DecodeError("deinterleave: not all data is recorded"))
     return blocks, ecblocks
 end
 
+## correct and decode message
 """
-    correct_message(msgblock::AbstractVector, ecblock::AbstractVector)
+    correct_message(msgblock::AbstractVector
+                   , ecblock::AbstractVector
+                   , alg::ReedSolomonAlgorithm
+                   ; noerror::Bool=false)
 
-Correct the msgblock using Euclidean decoder.
+Error correction of the message block using the given algorithm.
+
+Throw DecodeError if the value `noerror` is true and the message need error correction.
 """
-function correct_message(msgblock::AbstractVector, ecblock::AbstractVector)
+function correct_message(msgblock::AbstractVector
+                        , ecblock::AbstractVector
+                        , alg::ReedSolomonAlgorithm
+                        ; noerror::Bool=false)
     nsym = length(ecblock)
     # received polynomial = ecpoly + (msgpoly << nsym)
     receivedpoly = Poly(reverse!(vcat(msgblock, ecblock)))
     # error correction using Euclidean algorithm
-    msgpoly = euclidean_decoder(receivedpoly, nsym)
-    return reverse!(msgpoly.coeff)[1:length(msgblock)]
+    msgpoly = RSdecoder(receivedpoly, nsym, alg)
+    dist = hamming_distance(msgpoly, receivedpoly)
+    noerror && dist != 0 && 
+        throw(DecodeError("correct_message: message contains errors(needs error correction"))
+    # number of errors exceeds the limit(can result in misreading!)
+    2 * dist > nsym && @warn ReedSolomonError()
+    lmsg = length(msgblock)
+    return @view msgpoly.coeff[end:-1:end-lmsg+1]
 end
 
 """
@@ -94,7 +116,8 @@ function decodedata(bits::AbstractVector, msglen::Int, ::Numeric)
     str1 = join(string.(ints1; pad=3))
     ## remain part
     rem == 0 && return str1
-    return str1 * string(bitarray2int(@view(bits[bitlen1 + 1:bitlen1 + 1 + rem * 3]));pad=rem)
+    remnum = bitarray2int(@view(bits[bitlen1 + 1:bitlen1 + 1 + rem * 3]))
+    return str1 * string(remnum;pad=rem)
 end
 
 function decodedata(bits::AbstractVector, msglen::Int, ::Alphanumeric)
@@ -124,7 +147,7 @@ function decodedata(bits::AbstractVector, msglen::Int, ::Byte)
 end
 
 function decodedata(bits::AbstractVector, msglen::Int, ::UTF8)
-    bytes = bits2bytes(@view(bits[1:msglen << 3]))
+    bytes = UInt8.(bits2bytes(@view(bits[1:msglen << 3])))
     return String(bytes)
 end
 
@@ -135,7 +158,7 @@ Try decoding message by utf-8 mode.
 """
 function tryutf8(bits::AbstractVector, msglen::Int)
     # trybyte(bits, msglen) || return false
-    bytes = bits2bytes(@view(bits[1:msglen << 3]))
+    bytes = UInt8.(bits2bytes(@view(bits[1:msglen << 3])))
     ## 1000 0000, 0100 0000, 0010 0000, 0001 0000, 0000 1000
     b0, b1, b2, b3, b4 = 0x80, 0x40, 0x20, 0x10, 0x08
     ind = 1
@@ -172,7 +195,7 @@ end
     trybyte(bits::AbstractVector, msglen::Int)
 
 Try decoding message by `Byte` mode, where `bits` = `message_bits` + `pad_bits`.
-Return `true` the `pad_bits` is correct.
+Return `true` if the `pad_bits` is correct.
 """
 function trybyte(bits::AbstractVector, msglen::Int)
     nbits = length(bits)
@@ -181,19 +204,36 @@ function trybyte(bits::AbstractVector, msglen::Int)
     ## check the pad bits
     remainbytes = bits2bytes(@view(bits[msglen * 8 + 5:end]))
     nrem = length(remainbytes)
-    return remainbytes == repeat([0xec, 0x11], ceil(Int, nrem / 2))[1:nrem]
+    return @views remainbytes == repeat([236, 17], ceil(Int, nrem / 2))[1:nrem]
 end
 
+## pack up the information
 """
-    qrdecode(mat::AbstractMatrix; noerror::Bool=false, utf8::Bool=false)
+    qrdecode(mat::AbstractMatrix
+            ; noerror::Bool=false
+            , preferutf8::Bool=true
+            , alg::ReedSolomonAlgorithm=Euclidean()
+            )::QRInfo
 
-QR Code decoder.
+QR code decoder.
+
+If `noerror` is `true`, the decoder will raise an Exception(ReedSolomonError/InfoError)
+when the QR code `mat` needs error correction.
+
+If `preferutf8` is `true`, the decoder will try to decode the message by `UTF8` mode
+when dealing with `Byte` mode.
+
+The error correction algorithm is specified by the variable `alg`(default: `Euclidean`).
 """
-function qrdecode(mat::AbstractMatrix; noerror::Bool=false, preferutf8=true)
+function qrdecode(mat::AbstractMatrix
+                 ; noerror::Bool=false
+                 , preferutf8::Bool=true
+                 , alg::ReedSolomonAlgorithm=Euclidean()
+                 )::QRInfo
     # --- decompose --- #
-    ## extract data bits from the QR-Matrix and 
-    ## check whether the matrix is valid or not
-    version, eclevel, mask, msgbits = qrdecompose(mat;noerror=noerror)
+    ## 1. extract data bits from the QR-Matrix and 
+    ## 2. check whether the matrix is valid or not
+    version, eclevel, mask, msgbits = qrdecompose(mat; noerror=noerror)
     
     # --- get encoded bits --- #
     ## bits => bytes
@@ -205,17 +245,9 @@ function qrdecode(mat::AbstractMatrix; noerror::Bool=false, preferutf8=true)
 
     ## de-interleave: bytes ==> blocks & ecblocks
     msgblocks, ecblocks = deinterleave(bytes, eclevel, version)
-    ncodewords = length(first(ecblocks))
 
-    ## error correct: msgblocks and ecblocks ==> corrected message blocks
-    crr_msgblocks = correct_message.(msgblocks, ecblocks)
-
-    ## Requires that received bits do not contain errors
-    if noerror
-        crr_msgblocks != msgblocks && throw(DecodeError("Data-bits of the QR-Code contain errors"))
-        decblocks = getecblock.(crr_msgblocks, ncodewords)
-        decblocks != ecblocks && throw(DecodeError("Data-bits of the QR-Code contain errors"))
-    end
+    ## error correction: msgblocks and ecblocks ==> corrected message blocks
+    crr_msgblocks = correct_message.(msgblocks, ecblocks, Ref(alg); noerror=noerror)
 
     ## encoded = mode indicator + character count indicator + message bits
     ##         + pad bits(terminate + pad to multiple of 8 + repeated pattern)
@@ -226,7 +258,7 @@ function qrdecode(mat::AbstractMatrix; noerror::Bool=false, preferutf8=true)
     mode = decodemode(modeind) # Numeric, Alphanumeric, Byte, Kanji
     i = (version ≥ 1) + (version ≥ 10) + (version ≥ 27)
     cclength = charactercountlength[mode][i] # length of the char-count-indicator
-    ccindicator = encoded[5:5 + cclength - 1] # character count indicator
+    ccindicator = @view encoded[5:5 + cclength - 1] # character count indicator
 
     ## get message length from the c-c-indicator
     msglen = bitarray2int(ccindicator)
@@ -235,6 +267,7 @@ function qrdecode(mat::AbstractMatrix; noerror::Bool=false, preferutf8=true)
     ## start position of the message bits
     startpos = 4 + cclength + 1
     messagebits = @view(encoded[startpos:end])
+
     ## decode message
     ### for Byte mode
     if mode == Byte()
@@ -244,7 +277,6 @@ function qrdecode(mat::AbstractMatrix; noerror::Bool=false, preferutf8=true)
             mode = UTF8()
         end
     end
-    
     msg = decodedata(messagebits, msglen, mode)
 
     ## pack up the result

@@ -5,3 +5,4 @@
 Manifest.toml
 /docs/build/
 .ipynb_checkpoints/
+.vscode/

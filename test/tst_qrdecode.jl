@@ -1,7 +1,6 @@
 @testset "QR-Code Decoding" begin
     alphabets = join.(['0':'9', keys(alphanumeric), keys(kanji), Char.(0:255), Char.(0:127)])
     modes = [Numeric(), Alphanumeric(), Kanji(), Byte(), UTF8()]
-    eclevels = [Low(), Medium(), Quartile(), High()]
     for (mode, alphabet) in zip(modes, alphabets), eclevel in eclevels
         cap = last(characterscapacity[(eclevel, mode)])
         msg = join(rand(alphabet, rand(1:cap)))
@@ -22,7 +21,6 @@ end
     # message
     alphabets = ['0':'9', keys(alphanumeric), keys(kanji), Char.(0:255), Char.(0:127)]
     modes = [Numeric(), Alphanumeric(), Kanji(), Byte(), UTF8()]
-    eclevels = [Low(), Medium(), Quartile(), High()]
     for (mode, alphabet) in zip(modes, alphabets), eclevel in eclevels
         cap = last(characterscapacity[(eclevel, mode)])
         msg = join(rand(alphabet, rand(1:cap)))
@@ -59,11 +57,14 @@ end
         matrix = emptymatrix(version)
         masks = makemasks(matrix)
         matrix = placedata!(matrix, msgbits)
-        candidates = map(enumerate(masks)) do (i, m)
-            i - 1, xor.(matrix, m)
-        end
-        mask, matrix = first(sort(candidates, by = penalty ∘ last))
-        matrix = addformat(matrix, mask, version, eclevel)
+        addversion!(matrix, version)
+
+        # Apply mask and add format information
+        maskedmats = [addformat!(xor.(matrix, mat), i-1, eclevel) 
+                    for (i, mat) in enumerate(masks)]
+        scores = penalty.(maskedmats)
+        mask = argmin(scores) - 1
+        matrix = maskedmats[mask + 1]
 
         mat = qrcode(msg; mode=mode, eclevel=eclevel, compact=true)
         @test mat == matrix
@@ -87,7 +88,7 @@ end
 
 
         # correct message using Euclidean algorithm (no error in this case)
-        d_ec_blocks = correct_message.(d_blocks, d_ecblocks)
+        d_ec_blocks = correct_message.(d_blocks, d_ecblocks, Ref(Euclidean()))
         @test d_ec_blocks == blocks
         d_ec_ecblocks = getecblock.(d_ec_blocks, d_ncodewords)
         @test d_ec_ecblocks == ecblocks
@@ -230,7 +231,6 @@ end
 
 @testset "QRCode -- UTF8 mode" begin
     mode = UTF8()
-    eclevels = [Low(), Medium(), Quartile(), High()]
     for v in 1:40, eclevel in eclevels
         cap = last(characterscapacity[(eclevel, mode)]) >> 2
         msg = join(rand(Char, rand(1:cap)))
