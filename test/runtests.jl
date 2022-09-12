@@ -4,7 +4,7 @@ using StatsBase: sample
 using QRCoders
 using QRCoders: formatinfo, versioninfo, encodemessage, qrcode, emptymatrix, makemasks, getcharactercountindicator,
                 encodedata, padencodedmessage, makeblocks, getecblock, interleave, placedata!, modeindicators, 
-                ecblockinfo, penalty, addformat, bitarray2int, int2bitarray, charactercountlength, getmode, 
+                ecblockinfo, penalty, addformat!, bitarray2int, int2bitarray, charactercountlength, getmode, 
                 remainderbits, alphanumeric, kanji, characterscapacity, issubset, bits2bytes, utf8len
 using QRCoders.Polynomial: mult, geterrorcorrection, gfpow2, iszeropoly, gflog2, unit, euclidean_divide, divide
 using QRDecoders: hamming_weight, hamming_distance, qrversion, qrdecode_version, qrformat, qrdecode_format, mode2bin, 

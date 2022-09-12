@@ -28,7 +28,6 @@ end
 """
     DecodeError <: Exception
 
-Errors while decoding message.
 The data part of QR-matrix contains error.
 """
 struct DecodeError <: Exception
@@ -40,7 +39,7 @@ mutable struct QRInfo
     version::Int # version info(1 ≤ v ≤ 40)
     eclevel::ErrCorrLevel # error correction level(High, Low, Medium, Quartile)
     mask::Int # mask pattern(0-7)
-    mode::Mode # encoding mode: Numeric, Alphanumeric, Byte, Kanji
+    mode::Mode # encoding mode: Numeric, Alphanumeric, Byte, Kanji, UTF8
     message::AbstractString # decoded data
 end
 

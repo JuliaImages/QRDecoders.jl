@@ -63,7 +63,7 @@ end
             i - 1, xor.(matrix, m)
         end
         mask, matrix = first(sort(candidates, by = penalty ∘ last))
-        matrix = addformat(matrix, mask, version, eclevel)
+        matrix = addformat!(matrix, mask, version, eclevel)
 
         mat = qrcode(msg; mode=mode, eclevel=eclevel, compact=true)
         @test mat == matrix
