@@ -22,10 +22,10 @@ end
 function deinterleave(bytes::AbstractVector, ncodewords::Int, 
                       nb1::Int, nc1::Int, nb2::Int, nc2::Int)
     ## blocks of group1 and group2
-    blocks = vcat([Vector{UInt8}(undef, nc1) for _ in 1:nb1],
-                  [Vector{UInt8}(undef, nc2) for _ in 1:nb2])
+    blocks = vcat([Vector{Int}(undef, nc1) for _ in 1:nb1],
+                  [Vector{Int}(undef, nc2) for _ in 1:nb2])
     ## error correction blocks
-    ecblocks = [Vector{UInt8}(undef, ncodewords) for _ in 1:(nb1 + nb2)]
+    ecblocks = [Vector{Int}(undef, ncodewords) for _ in 1:(nb1 + nb2)]
     
     ind = length(bytes) # index start from the end of the message
     ## Error correction bytes
@@ -59,7 +59,8 @@ function correct_message(msgblock::AbstractVector, ecblock::AbstractVector)
     receivedpoly = Poly(reverse!(vcat(msgblock, ecblock)))
     # error correction using Euclidean algorithm
     msgpoly = euclidean_decoder(receivedpoly, nsym)
-    return reverse!(msgpoly.coeff)[1:length(msgblock)]
+    lmsg = length(msgblock)
+    return @view msgpoly.coeff[end:-1:end-lmsg+1]
 end
 
 """
@@ -129,7 +130,7 @@ function decodedata(bits::AbstractVector, msglen::Int, ::Byte)
 end
 
 function decodedata(bits::AbstractVector, msglen::Int, ::UTF8)
-    bytes = bits2bytes(@view(bits[1:msglen << 3]))
+    bytes = UInt8.(bits2bytes(@view(bits[1:msglen << 3])))
     return String(bytes)
 end
 
@@ -140,7 +141,7 @@ Try decoding message by utf-8 mode.
 """
 function tryutf8(bits::AbstractVector, msglen::Int)
     # trybyte(bits, msglen) || return false
-    bytes = bits2bytes(@view(bits[1:msglen << 3]))
+    bytes = UInt8.(bits2bytes(@view(bits[1:msglen << 3])))
     ## 1000 0000, 0100 0000, 0010 0000, 0001 0000, 0000 1000
     b0, b1, b2, b3, b4 = 0x80, 0x40, 0x20, 0x10, 0x08
     ind = 1
@@ -186,7 +187,7 @@ function trybyte(bits::AbstractVector, msglen::Int)
     ## check the pad bits
     remainbytes = bits2bytes(@view(bits[msglen * 8 + 5:end]))
     nrem = length(remainbytes)
-    return remainbytes == repeat([0xec, 0x11], ceil(Int, nrem / 2))[1:nrem]
+    return @views remainbytes == repeat([236, 17], ceil(Int, nrem / 2))[1:nrem]
 end
 
 
@@ -239,7 +240,7 @@ function qrdecode(mat::AbstractMatrix; noerror::Bool=false, preferutf8=true)::QR
     mode = decodemode(modeind) # Numeric, Alphanumeric, Byte, Kanji
     i = (version ≥ 1) + (version ≥ 10) + (version ≥ 27)
     cclength = charactercountlength[mode][i] # length of the char-count-indicator
-    ccindicator = encoded[5:5 + cclength - 1] # character count indicator
+    ccindicator = @view encoded[5:5 + cclength - 1] # character count indicator
 
     ## get message length from the c-c-indicator
     msglen = bitarray2int(ccindicator)

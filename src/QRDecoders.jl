@@ -27,8 +27,6 @@ Format information, Version information, matrix size and etc.
 """
 struct InfoError <: Exception
     st::AbstractString
-    InfoError() = new("Invalid QR-Patterns")
-    InfoError(st) = new(st)
 end
 
 """
@@ -38,7 +36,6 @@ The data part of QR-matrix contains error.
 """
 struct DecodeError <: Exception
     st::AbstractString
-    DecodeError(st) = new(st)
 end
 
 mutable struct QRInfo

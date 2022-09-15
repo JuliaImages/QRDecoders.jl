@@ -276,25 +276,43 @@ BMdecoder(received::Poly, nsym::Int) = BMdecoder!(copy(received), Int[], nsym)
 
 ## Euclidean Decoder
 
-"""
-    extended_euclidean_divide(r₁::Poly, r₂::Poly)
+@doc raw"""
+extended_euclidean_divide(r₁::Poly, r₂::Poly)
 
 Return polynomials u(x) and v(x) such that u(x)r₁(x) + v(x)r₂(x) = gcd(r₁(x), r₂(x)).
 
 ## illustration
-Let rₖ = uₖr₁ + vₖr₂, k ≥ 2\\
-    r₀ = q₀⋅r₁ + r₂ => r₂ = r₀ - q₀r₁, where r₀=r₂, q₀=0\\
-    r₁ = q₁⋅r₂ + r₃ => r₃ = r₁ - q₁⋅r₂\\
-    r₂ = q₂⋅r₃ + r₄ => r₄ = r₂ - q₂⋅r₃\\
-    rₖ = qₖ⋅r_{k+1} + r_{k+2} => r_{k+2} = rₖ - qₖ⋅r_{k+1}\\
-                              => r_{k+2} = uₖr₁ + vₖr₂ - qₖ(u_{k+1}r₁ + v_{k+1}r₂)\\
-                                         = (uₖ - qₖ(u_{k+1})r₁ + (vₖ - qₖv_{k+1})r₂\\
-                              => u_{k+1} = uₖ - qₖu_{k+1}\\
-                                 v_{k+1} = vₖ - qₖv_{k+1}\\
-    u₂, v₂ = 0, 1\\
-    u₃, v₃ = 1, -q₁\\
-    loop until\\
-    rₜ = qₜ⋅r_{t+1} + 0 => r_{t+1} is the great common factor of r₁ and r₂
+
+Let
+```math
+r_k = u_kr_1 + v_kr_2,\quad k \geq 2
+```
+
+Then
+```math
+\begin{aligned}
+    r_0 &= q_0r_1 + r_2 \quad\Rightarrow r_2 = r_0 - q_0r_1,\ where\ r_0=r_2,\ q_0=0\\
+    r_1 &= q_1r_2 + r_3 \quad\Rightarrow r_3 = r_1 - q_1r_2\\
+    r_2 &= q_2r_3 + r_4 \quad\Rightarrow r_4 = r_2 - q_2r_3\\
+    &\vdots\\
+    r_k &= q_kr_{k+1} + r_{k+2}\Rightarrow r_{k+2} = r_k - q_kr_{k+1}\\  
+    &\phantom{= q_kr_{k+1} + r_{k+2}\Rightarrow r_{k+2}} = u_kr_1 + v_kr_2 - q_k(u_{k+1}r_1 + v_{k+1}r_2)\\
+    &\phantom{= q_kr_{k+1} + r_{k+2}\Rightarrow r_{k+2}} = (u_k - q_ku_{k+1})r_1 + (v_k - q_kv_{k+1})r_2
+\end{aligned}
+```
+
+
+Loop until
+``r_t = q_tr_{t+1} + 0``, then ``r_{t+1}`` is the greatest common factor of  ``r_1`` and ``r_2``.
+
+Here we obtain the recursive formula of ``u_k`` and ``v_k``.
+```math
+\begin{aligned}
+    u_2, v_2 &= 0, 1,\quad 
+    u_3, v_3 = 1, -q_1\\
+    u_{k+1} &= u_k - q_ku_{k+1},\quad
+    v_{k+1} = v_k - q_kv_{k+1}
+\end{aligned}
 """
 function extended_euclidean_divide(r₁::Poly, r₂::Poly)
     u₁, v₁, u₂, v₂ = Poly.([[1], [0], [0], [1]])

@@ -28,10 +28,6 @@
     @test iszeropoly(a * f + b * g + common)
 end
 
-@testset "Sugiyama's adaptation of ED algorithm" begin
-    nothing ## TODO
-end
-
 @testset "Euclidean decoder -- without erasures" begin
     rawmsg = randpoly(155)
     nsym = 100
