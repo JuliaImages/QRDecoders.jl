@@ -28,26 +28,26 @@ end
 @testset "Version information" begin
     ## distance of the Version-Code
     @test hamming_distance(qrversion.(7:40)) == 8
-
+    
     ## version decoding -- with disturbance
     ver_info = rand(7:40)
     ver_code = qrversion(ver_info)
     ver_code_disturb = ver_code
-    errors = sample(7:40, 8; replace=false)
+    errors = sample(0:17, 8; replace=false)
     for e in errors
         ver_code_disturb ⊻= 1 << e
     end
     ver_dist = hamming_distance(ver_code, ver_code_disturb)
     @test ver_dist ≤ length(errors)
 
-    ## errors within correction capacity(≤4)
+    ## errors within correction capacity(≤3)
     ver_code_disturb = ver_code
-    for _ in 1:4
-        ver_code_disturb ⊻= 1 << rand(7:40)
+    for _ in 1:3
+        ver_code_disturb ⊻= 1 << rand(0:17)
     end
     ver_decode_info = qrdecode_version(ver_code_disturb)
     @test ver_info == ver_decode_info
-
+    
     ## get version from QR-matrix
     ## invalid matrix size
     mat = rand(Bool, 21, 25)
