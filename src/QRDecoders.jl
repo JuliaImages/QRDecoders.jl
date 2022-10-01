@@ -7,7 +7,8 @@ export qrdecompose, qrdecode
 export QRInfo
 
 using QRCoders
-using Images: imresize, load
+using ImageTransformations: imresize
+using FileIO: load
 
 """
     ReedSolomonError <: Exception
