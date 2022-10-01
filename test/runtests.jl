@@ -1,5 +1,6 @@
 using Test
-using Images: save, load
+using ImageTransformations: imresize
+using FileIO: load, save
 using StatsBase: sample
 # QRCoders
 using QRCoders

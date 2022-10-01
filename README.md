@@ -48,8 +48,9 @@ For more complicate cases, it is not supported yet, but will be added in the fut
 There are some options for the decoder that can be set by the keyword arguments.
 
 First and foremost, we implement two algorithms for error correction:
- - Berlekamp-Massey algorithm
- - Sugiyama's adaption of Euclidean algorithm
+ - [Berlekamp-Massey algorithm](https://en.wikipedia.org/wiki/Berlekamp%E2%80%93Massey_algorithm)
+ - [Sugiyama's adaption of Euclidean algorithm](https://en.wikipedia.org/wiki/Reed%E2%80%93Solomon_error_correction#Euclidean_decoder)
+
 
 The default algorithm is `Euclidean algorithm`, and one can specify the algorithm by the keyword argument `alg`. For example:
 ```julia
