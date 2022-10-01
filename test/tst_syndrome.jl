@@ -39,7 +39,7 @@
     @test erratalocator_polynomial(Int[]) == Poly([1])
 
     ## reducebyHorner(p::Poly, a::Int)
-    p, a = randpoly(1:255), rand(0:255)
+    p, a = randpoly(2:255), rand(0:255)
     qx = reducebyHorner(p, a)
     qeval = popfirst!(qx.coeff)
     @test qeval == polynomial_eval(p, a)
@@ -127,9 +127,9 @@ end
     @test fillerasures(msg, Int[], n) == msg
 end
 
-@testset "BMdecoder -- without erasures" begin
+@testset "berlekamp_massey_decoder -- without erasures" begin
     ## erratalocator_polynomial(received::Poly, nsym::Int)
-    ## BMdecoder(received::Poly, nsym::Int)
+    ## berlekamp_massey_decoder(received::Poly, nsym::Int)
 
     ### number of errors within the capacity of RS-Code
     rawmsg = randpoly(155)
@@ -142,13 +142,13 @@ end
     Λx = erratalocator_polynomial(sydpoly, nsym)
     errlocpoly = erratalocator_polynomial(errpos)
     @test Λx == errlocpoly
-    @test BMdecoder(received, nsym) == msg
+    @test berlekamp_massey_decoder(received, nsym) == msg
 
     ### no errors
     sydpoly = syndrome_polynomial(msg, nsym)
     Λx = erratalocator_polynomial(sydpoly, nsym)
     @test Λx == unit(Poly)
-    @test BMdecoder(msg, nsym) == msg
+    @test berlekamp_massey_decoder(msg, nsym) == msg
 
     ### odd number of syndromes
     rawmsg = randpoly(100)
@@ -161,7 +161,7 @@ end
     Λx = erratalocator_polynomial(sydpoly, nsym)
     errlocpoly = erratalocator_polynomial(errpos)
     @test Λx == errlocpoly
-    @test BMdecoder(received, nsym) == msg
+    @test berlekamp_massey_decoder(received, nsym) == msg
 
     ### too much errors(detected)
     rawmsg = randpoly(100)
@@ -172,7 +172,7 @@ end
     received.coeff[1 .+ errpos] .⊻= rand(1:255, length(errpos))
     sydpoly = syndrome_polynomial(received, nsym)
     @test_throws ReedSolomonError erratalocator_polynomial(sydpoly, nsym; check=true)
-    @test_throws ReedSolomonError BMdecoder(received, nsym)
+    @test_throws ReedSolomonError berlekamp_massey_decoder(received, nsym)
     
     ### too much errors(undetected!)
     ### [0] -encode> [0, 0, 0] -transfer> [2, 3, 0] -correct> [2, 3, 1] -decode> [1] 
@@ -187,22 +187,22 @@ end
     Λx = erratalocator_polynomial(sydpoly, nsym; check=true)
     @test !iszeropoly(errlocpoly + Λx)
     @test Λx == erratalocator_polynomial([2])
-    @test !iszeropoly(BMdecoder(received, nsym) + msg)
+    @test !iszeropoly(berlekamp_massey_decoder(received, nsym) + msg)
 end
 
-@testset "BMdecoder -- with erasures" begin
+@testset "berlekamp_massey_decoder -- with erasures" begin
     ## -- The modified Forney syndromes is still debugging -- ##
 
     ### length of the received message is too long
     rawmsg = randpoly(100)
     nsym = 156
     msg = rawmsg << nsym + geterrorcorrection(rawmsg, nsym)
-    @test_throws DomainError BMdecoder(msg, nsym)
+    @test_throws DomainError berlekamp_massey_decoder(msg, nsym)
     
     ### number of erasures exceeds the capacity of RS-Code
     rawmsg = randpoly(150)
     nsym = 50
     msg = rawmsg << nsym + geterrorcorrection(rawmsg, nsym)
     erasures = sample(0:199, 51; replace=false)
-    @test_throws ReedSolomonError BMdecoder(msg, erasures, nsym)
+    @test_throws ReedSolomonError berlekamp_massey_decoder(msg, erasures, nsym)
 end
