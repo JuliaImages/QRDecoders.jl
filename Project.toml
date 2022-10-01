@@ -9,7 +9,7 @@ QRCoders = "f42e9828-16f3-11ed-2883-9126170b272d"
 
 [compat]
 julia = "1.3"
-QRCoders = "1.0.1"
+QRCoders = "1"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
