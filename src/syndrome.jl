@@ -371,7 +371,7 @@ function euclidean_decoder!(received::Poly, erasures::AbstractVector, nsym::Int)
     xn = Poly(push!(zeros(Int, nsym), 1))
     
     ## deg(Ω(x))  ≤ ⌊(nsym + length(erasures)) / 2⌋ - 1
-    upperdeg = (nsym + length(erasures)) ÷ 2 - 1
+    upperdeg = (nsym + length(erasures)) >> 1 - 1
     ## error locator polynomial Λx
     ## evaluator polynomial evlpoly
     Λx, _, Ωx = Sugiyama_euclidean_divide(sydpoly * Γx, xn, upperdeg)
@@ -381,11 +381,12 @@ function euclidean_decoder!(received::Poly, erasures::AbstractVector, nsym::Int)
     
     ## errors positions + erasures positions
     errpos = vcat(getpositions(Λx), erasures)
-    length(errpos) != length(errataloc) - 1 && throw(ReedSolomonError)
+    length(errpos) != length(errataloc) - 1 && throw(ReedSolomonError())
+    maximum(errpos) > length(received) && throw(ReedSolomonError())
     
     ## Forney algorithm
     received.coeff[1 .+ errpos] .⊻= forney_algorithm(errataloc, Ωx, errpos)
-    return received    
+    return received
 end
 
 """

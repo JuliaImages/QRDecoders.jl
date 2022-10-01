@@ -1,6 +1,5 @@
 @testset "QR-Code Decoding" begin
     alphabets = join.(['0':'9', keys(alphanumeric), keys(kanji), Char.(0:255), Char.(0:127)])
-    modes = [Numeric(), Alphanumeric(), Kanji(), Byte(), UTF8()]
     for (mode, alphabet) in zip(modes, alphabets), eclevel in eclevels
         cap = last(characterscapacity[(eclevel, mode)])
         msg = join(rand(alphabet, rand(1:cap)))
@@ -20,7 +19,6 @@ end
     # --- enoding --- #
     # message
     alphabets = ['0':'9', keys(alphanumeric), keys(kanji), Char.(0:255), Char.(0:127)]
-    modes = [Numeric(), Alphanumeric(), Kanji(), Byte(), UTF8()]
     for (mode, alphabet) in zip(modes, alphabets), eclevel in eclevels
         cap = last(characterscapacity[(eclevel, mode)])
         msg = join(rand(alphabet, rand(1:cap)))

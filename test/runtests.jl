@@ -5,7 +5,7 @@ using QRCoders
 using QRCoders:
     # encode data
     makeblocks, getecblock, interleave, 
-    emptymatrix, makemasks, penalty,
+    emptymatrix, makemask, makemasks, penalty,
     placedata!, addformat!, addversion!,
     # tables
     alphanumeric, kanji, qrversion, qrformat, 
@@ -15,7 +15,7 @@ using QRCoders:
     getcharactercountindicator, charactercountlength,
     padencodedmessage, encodedata, encodemessage,
     # data convert
-    bitarray2int, int2bitarray, bits2bytes
+    bitarray2int, int2bitarray, bits2bytes, utf8len
 
 using QRCoders.Polynomial:
     # operator for GF(256) integers 
@@ -35,9 +35,7 @@ using QRDecoders:
     # decode data
     correct_message, decodemode, decodedata,
     # Byte mode and UTF8 mode
-    trybyte, tryutf8,
-    # algorithm
-    Euclidean, BerlekampMassey
+    trybyte, tryutf8
                   
 using QRDecoders.Syndrome:
     # polynomial tools
@@ -47,6 +45,7 @@ using QRDecoders.Syndrome:
     derivative_polynomial, evaluator_polynomial,
     # applications
     haserrors, fillerasures, RSdecoder,
+    Euclidean, BerlekampMassey,
     # BM decoder
     erratalocator_polynomial, berlekamp_massey_decoder,
     # Euclidean decoder
@@ -59,9 +58,13 @@ Random polynomial of degree n.
 """
 randpoly(n::Int) = Poly([rand(0:255, n-1)..., rand(1:255)])
 randpoly(range::AbstractVector{Int}) = randpoly(rand(range))
-eclevels = [Low(), Medium(), Quartile(), High()]
 
+eclevels = [Low(), Medium(), Quartile(), High()]
+modes = [Numeric(), Alphanumeric(), Kanji(), Byte(), UTF8()]
+
+include("randerr.jl")
 include("tst_qrinfo.jl")
 include("tst_syndrome.jl")
 include("tst_euclidean.jl")
 include("tst_qrdecode.jl")
+include("tst_decodeerr.jl")

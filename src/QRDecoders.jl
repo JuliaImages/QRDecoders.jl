@@ -1,6 +1,7 @@
 module QRDecoders
 
 export euclidean_decoder, ReedSolomonError
+export Euclidean, BerlekampMassey, RSdecoder
 export qrdecompose, InfoError
 export qrdecode, DecodeError
 export QRInfo
@@ -64,6 +65,11 @@ mutable struct QRInfo
     mode::Mode # encoding mode: Numeric, Alphanumeric, Byte, Kanji, UTF8
     message::AbstractString # decoded data
 end
+
+function Base.:(==)(info1::QRInfo, info2::QRInfo)
+    all(getfield(info1, f) == getfield(info2, f) for f in fieldnames(QRInfo))
+end
+
 
 include("qrinfo.jl")
 include("syndrome.jl")
