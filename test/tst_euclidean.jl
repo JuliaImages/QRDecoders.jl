@@ -28,10 +28,6 @@
     @test iszeropoly(a * f + b * g + common)
 end
 
-@testset "Sugiyama's adaptation of ED algorithm" begin
-    nothing ## TODO
-end
-
 @testset "Euclidean decoder -- without erasures" begin
     rawmsg = randpoly(155)
     nsym = 100
@@ -159,7 +155,7 @@ end
     received = copy(msg)
     received.coeff[1 .+ errpos] .⊻= rand(1:255, length(errpos))
     # might be undetected (special property of Euclidean decoder)
-    # @test_throws ReedSolomonError BMdecoder(received, erasures, nsym)
+    # @test_throws ReedSolomonError berlekamp_massey_decoder(received, erasures, nsym)
 
     ### samll case
     rawmsg = Poly([0])
