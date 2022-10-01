@@ -29,6 +29,10 @@ end
     mat = qrcode_with_randerr(msg)
     info = qrdecode(mat;  preferutf8=false)
     infobybm = qrdecode(mat; alg=BerlekampMassey(),  preferutf8=false)
+    # read qr matrix from image
+    exportfrommatrix(mat, "testimages/randerr.png")
+    @test getqrmatrix("testimages/randerr.png") == mat
+
     @test info == infobybm
     @test_throws DecodeError qrdecode(mat; noerror=true)
     @test_throws DecodeError qrdecode(mat; alg=BerlekampMassey(), noerror=true)
@@ -38,6 +42,8 @@ end
     mat = qrcode_with_randerr(msg ^ 176, 1) # max version
     info = qrdecode(mat;  preferutf8=false)
     infobybm = qrdecode(mat; alg=BerlekampMassey(), preferutf8=false)
+    exportfrommatrix(mat, "testimages/randerr.png")
+    @test getqrmatrix("testimages/randerr.png") == mat
     @test info == infobybm
     @test_throws DecodeError qrdecode(mat; noerror=true)
     @test_throws DecodeError qrdecode(mat; alg=BerlekampMassey(), noerror=true)
@@ -48,6 +54,8 @@ end
         mat = qrcode_with_maxerr(msg^i)
         info = qrdecode(mat; preferutf8=false)
         infobybm = qrdecode(mat; alg=BerlekampMassey(), preferutf8=false)
+        exportfrommatrix(mat, "testimages/randerr$i.png")
+        @test getqrmatrix("testimages/randerr$i.png") == mat
         @test info == infobybm
         @test_throws DecodeError qrdecode(mat; noerror=true)
         @test_throws DecodeError qrdecode(mat; alg=BerlekampMassey(), noerror=true)

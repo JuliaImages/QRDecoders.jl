@@ -5,13 +5,43 @@
         msg = join(rand(alphabet, rand(1:cap)))
         @test getmode(msg) ⊆ mode
         version = getversion(msg, mode, eclevel)
-
         mat = qrcode(msg, eclevel=eclevel, compact=true)
         info = qrdecode(mat; noerror=true, preferutf8=false)
         @test info.message == msg && 
               info.version == version &&
               info.mode ⊆ mode &&
               info.eclevel == eclevel
+    end
+end
+
+@testset "Decoding from pictures" begin
+    # test for encoding modes
+    alphabets = join.(['0':'9', keys(alphanumeric), keys(kanji), Char.(0:255)])
+    for (mode, alphabet) in zip(modes, alphabets)
+        cap = last(characterscapacity[(Medium(), mode)])
+        msg = join(rand(alphabet, rand(1:cap)))
+        mat = qrcode(msg)
+        info = qrdecode(mat; noerror=true, preferutf8=false)
+        exportqrcode(msg, "testimages/test.png")
+        exportqrcode(msg, "testimages/test.jpg")
+        info2 = qrdecode("testimages/test.png"; noerror=true, preferutf8=false)
+        info3 = qrdecode("testimages/test.jpg"; noerror=true, preferutf8=false)
+        @test info == info2 == info3
+    end
+
+    # test for versions
+    msg = "Hello, world!"
+    for v in 1:40
+        mat = qrcode(msg, version=v, compact=true)
+        info = qrdecode(mat; preferutf8=false)
+        exportqrcode(msg, "testimages/test$v.png", version=v)
+        exportqrcode(msg, "testimages/test$v.jpg", version=v)
+        mat2 = getqrmatrix("testimages/test$v.png")
+        mat3 = getqrmatrix("testimages/test$v.jpg")
+        info2 = qrdecode("testimages/test$v.png"; noerror=true, preferutf8=false)
+        info3 = qrdecode("testimages/test$v.jpg"; noerror=true, preferutf8=false)
+        @test mat == mat2 == mat2
+        @test info == info2 == info3
     end
 end
 

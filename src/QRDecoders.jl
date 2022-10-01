@@ -1,12 +1,13 @@
 module QRDecoders
 
-export euclidean_decoder, ReedSolomonError
-export Euclidean, BerlekampMassey, RSdecoder
-export qrdecompose, InfoError
-export qrdecode, DecodeError
+export Euclidean, BerlekampMassey
+export euclidean_decoder, berlekamp_massey_decoder, RSdecoder
+export InfoError, DecodeError, ReedSolomonError
+export qrdecompose, qrdecode
 export QRInfo
 
 using QRCoders
+using Images: imresize, load
 
 """
     ReedSolomonError <: Exception
@@ -74,7 +75,18 @@ end
 include("qrinfo.jl")
 include("syndrome.jl")
 include("qrdecode.jl")
+include("detect.jl")
 
-using .Syndrome: euclidean_decoder
+using .Syndrome: euclidean_decoder, berlekamp_massey_decoder, RSdecoder
+
+# The other method of qrdecode can be found in qrdecode.jl
+"""
+    qrdecode(path::AbstractString; keywords...)
+
+QR code decoder.
+
+For more information of the keywords, see `qrdecode(mat::AbstractMatrix; keywords...)`.
+"""
+qrdecode(path::AbstractString; keywords...) = qrdecode(getqrmatrix(path); keywords...)
 
 end

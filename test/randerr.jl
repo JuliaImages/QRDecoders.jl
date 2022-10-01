@@ -1,9 +1,21 @@
+"""
+    randerr!(msgpoly::Poly, e::Int)
+
+Randomly introduce `e` errors into msgpoly.
+"""
 function randerr!(msgpoly::Poly, e::Int)
     errpos = sample(eachindex(msgpoly.coeff), e; replace=false)
     msgpoly.coeff[errpos] .⊻= rand(1:255, e)
     return msgpoly
 end
 
+"""
+    getecinfo(msg::AbstractString)
+
+Get the error correction information of the message,
+i.e. the number of error correction codewords and 
+the number of error correction blocks.
+"""
 function getecinfo(msg::AbstractString)
     mode, eclevel = getmode(msg), Medium()
     version = getversion(msg, mode, eclevel)
@@ -11,11 +23,21 @@ function getecinfo(msg::AbstractString)
     return ncodewords, nb1 + nb2
 end
 
+"""
+    qrcode_with_maxerr(msg::AbstractString)
+
+Generate a QR code with maximum number of errors for each block.
+"""
 function qrcode_with_maxerr(msg::AbstractString)
     ncodewords, nb = getecinfo(msg)
     return qrcode_with_randerr(msg, fill(ncodewords >> 1, nb))
 end
 
+"""
+    qrcode_with_randerr
+
+Generate a QR code with random number of errors for each block.
+"""
 function qrcode_with_randerr(msg::AbstractString)
     ncodewords, nb = getecinfo(msg)
     return qrcode_with_randerr(msg, [rand(1:ncodewords >> 1) for _ in 1:nb])
@@ -59,12 +81,21 @@ function qrcode_with_randerr(msg::AbstractString, errs::AbstractVector)::BitMatr
     return addformat!(xor.(matrix, mask), maskind, eclevel)
 end
 
+"""
+    exportfrommatrix(matrix::AbstractMatrix
+                   , path::AbstractString = "qrcode.png"
+                   ; targetsize::Int = 5
+                   , compact::Bool = false
+                   , scale::Real = 0)
+
+Generate a QR code image from a matrix.
+This can be used to generate a QR code with errors.
+"""
 function exportfrommatrix(matrix::AbstractMatrix
                     , path::AbstractString = "qrcode.png"
                     ; targetsize::Int = 5
                     , compact::Bool = false
                     , scale::Real = 0)
-    path = split(path, '.')[1] + ".png"
     if compact
         matrix = falses(size(matrix) .+ (8, 8))
         matrix[5:end-4, 5:end-4] = matrix

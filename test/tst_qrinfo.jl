@@ -37,7 +37,7 @@ end
         ver_code_disturb ⊻= 1 << e
     end
     ver_dist = hamming_distance(ver_code, ver_code_disturb)
-    @test ver_dist == length(errors)
+    @test ver_dist ≤ length(errors)
 
     ## errors within correction capacity(≤4)
     ver_code_disturb = ver_code

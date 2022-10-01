@@ -14,7 +14,8 @@
 module Syndrome
 
 using QRCoders.Polynomial: mult, Poly, gfpow2, gflog2, gfinv, divide, unit,
-                           iszeropoly, rstripzeros, degree, euclidean_divide
+                           iszeropoly, rstripzeros!, degree, 
+                           euclidean_divide, euclidean_divide!
 using QRDecoders: ReedSolomonError, ReedSolomonAlgorithm, Euclidean, BerlekampMassey
 
 ###### --- division line --- ######
@@ -50,13 +51,13 @@ Horner's rule, find the polynomial q(x) such that p(x)-(x-a)q(x) is a constant p
 """
 function reducebyHorner(p::Poly, a::Int)
     reduced = Vector{Int}(undef, length(p))
-    reduced[1] = val = last(p.coeff)
+    reduced[end] = val = last(p.coeff)
     coeff = @view(p.coeff[end-1:-1:1])
     for (i, c) in enumerate(coeff)
         val = mult(val, a) ⊻ c
-        reduced[i + 1] = val
+        reduced[end-i] = val
     end
-    return Poly(reverse!(reduced))
+    return Poly(reduced)
 end
 
 """
@@ -211,14 +212,15 @@ function erratalocator_polynomial(sydpoly::Poly, erasures::AbstractVector, nsym:
     ## iteration
     for r in (ρ + 1):nsym
         Δ = getdelta(r)
+        xBx = x * Bx
         if Δ == 0 || 2 * L > r + ρ - 1 # condition updates
-            Λx, Bx = Λx + Δ * x * Bx, x * Bx
+            Λx, Bx = Λx + Δ * xBx, xBx
         else # δ = 1
             L = r - L - ρ
-            Λx, Bx = Λx + Δ * x * Bx, gfinv(Δ) * Λx
+            Λx, Bx = Λx + Δ * xBx, gfinv(Δ) * Λx
         end
     end
-    Λx = rstripzeros(Λx)
+    rstripzeros!(Λx)
     
     ## number of errors exceeds limitation of the RS-code
     v = length(Λx) - 1 - ρ # number of errors
@@ -335,10 +337,11 @@ end
 Yasuo Sugiyama's adaptation of the Extended Euclidean algorithm.
 Find u(x), v(x) and r(x) s.t. r(x) = u(x)r₁(x) + v(x)r₂(x) where r(x) = gcd(r₁(x), r₂(x)) or deg(r(x)) ≤ upperdeg.
 """
-function Sugiyama_euclidean_divide(r₁::Poly, r₂::Poly, upperdeg::Int)
+Sugiyama_euclidean_divide(r₁::Poly, r₂::Poly, upperdeg::Int) = Sugiyama_euclidean_divide!(copy(r₁), copy(r₂), upperdeg)
+function Sugiyama_euclidean_divide!(r₁::Poly, r₂::Poly, upperdeg::Int)
     u₁, v₁, u₂, v₂ = Poly.([[1], [0], [0], [1]])
     iszeropoly(r₂) && return u₁, v₁, r₁
-    q, r₃ = euclidean_divide(r₁, r₂)
+    q, r₃ = euclidean_divide!(r₁, r₂) # r₁ can be discarded for each time
     while degree(r₂) > upperdeg && !iszeropoly(r₃)
         # @assert r₁ = u₁raw₁ + v₁raw₂
         # @assert r₂ = u₂raw₁ + v₂raw₂
@@ -346,9 +349,9 @@ function Sugiyama_euclidean_divide(r₁::Poly, r₂::Poly, upperdeg::Int)
         # @assert r₂ = u₁raw₁ + v₁raw₂
         # @assert r₃ = u₂raw₁ + v₂raw₂
         r₁, r₂ = r₂, r₃
-        q, r₃ = euclidean_divide(r₁, r₂)
+        q, r₃ = euclidean_divide!(r₁, r₂)
     end
-    return rstripzeros.((u₂, v₂, r₂))
+    return rstripzeros!.((u₂, v₂, r₂))
 end
 
 """
@@ -402,7 +405,7 @@ euclidean_decoder(received::Poly, nsym::Int) = euclidean_decoder!(copy(received)
 Decode the message polynomial using the given Reed-Solomon algorithm.
 """
 RSdecoder(received::Poly, nsym::Int, ::Euclidean) = euclidean_decoder(received, nsym)
-RSdecoder(received::Poly, nsym, ::BerlekampMassey) = berlekamp_massey_decoder(received, nsym)
-RSdecoder(received::Poly, erasures::AbstractVector, nsym::Int, ::Euclidean) = euclidean_decoder(received, erasures, nsym)
+RSdecoder(received::Poly, nsym::Int, ::BerlekampMassey) = berlekamp_massey_decoder(received, nsym)
+# RSdecoder(received::Poly, erasures::AbstractVector, nsym::Int, ::Euclidean) = euclidean_decoder(received, erasures, nsym)
 # RSdecoder(received::Poly, erasures::AbstractVector, nsym, ::BerlekampMassey) = berlekamp_massey_decoder(received, erasures, nsym)
 end

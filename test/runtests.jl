@@ -1,4 +1,5 @@
 using Test
+using Images: save, load
 using StatsBase: sample
 # QRCoders
 using QRCoders
@@ -35,7 +36,9 @@ using QRDecoders:
     # decode data
     correct_message, decodemode, decodedata,
     # Byte mode and UTF8 mode
-    trybyte, tryutf8
+    trybyte, tryutf8,
+    # image processing
+    getalterpos, getqrmatrix
                   
 using QRDecoders.Syndrome:
     # polynomial tools
@@ -63,8 +66,21 @@ eclevels = [Low(), Medium(), Quartile(), High()]
 modes = [Numeric(), Alphanumeric(), Kanji(), Byte(), UTF8()]
 
 include("randerr.jl")
+
+# decompose of the qr code 
 include("tst_qrinfo.jl")
+
+# Syndrome decoding
 include("tst_syndrome.jl")
+
+# euclidean decoder
 include("tst_euclidean.jl")
+
+# decode message from QR matrix
 include("tst_qrdecode.jl")
+
+# decode with random errors
 include("tst_decodeerr.jl")
+
+# image detecting
+include("tst_detect.jl")
