@@ -21,7 +21,8 @@
     msgpoly = randpoly(16)
     errpoly = randpoly(4)
     received = msgpoly + errpoly
-    @test hamming_distance(msgpoly, received) == count(!iszero, errpoly.coeff)
+    @test hamming_distance(msgpoly, received) ≤ count(!iszero, errpoly.coeff)
+    @test hamming_distance(msgpoly, received) == hamming_weight(msgpoly + received)
 end
 
 @testset "Version information" begin
@@ -92,7 +93,7 @@ end
         fmt_code_disturb ⊻= 1 << e
     end
     fmt_dist = hamming_distance(fmt_code, fmt_code_disturb)
-    @test fmt_dist == length(errors)
+    @test fmt_dist ≤ length(errors)
 
     ## errors within correction capacity(≤2)
     fmt_code_disturb = fmt_code
