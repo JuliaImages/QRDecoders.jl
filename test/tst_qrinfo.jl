@@ -53,13 +53,13 @@ end
     mat = rand(Bool, 21, 25)
     @test_throws DimensionMismatch qrdecode_version(mat)
 
-    mat = qrcode("HELLO WORLD", eclevel = Low(), compact=true)
+    mat = qrcode("HELLO WORLD", eclevel = Low())
     @test qrdecode_version(mat) == 1
 
     ## low degree
     tag = true
     for v in 1:6
-        mat = qrcode("HELLO WORLD", eclevel = Low(), compact=true, version=v)
+        mat = qrcode("HELLO WORLD", eclevel = Low(), version=v)
         if qrdecode_version(mat;noerror=true) != v
             tag = false
             break
@@ -70,7 +70,7 @@ end
     ## higher degree
     tag = true
     for v in 7:40
-        mat = qrcode("HELLO WORLD", eclevel = High(), compact=true, version=v)
+        mat = qrcode("HELLO WORLD", eclevel = High(), version=v)
         if qrdecode_version(mat;noerror=true) != v
             tag = false
             break
@@ -105,7 +105,7 @@ end
 
     ## get format from QR-matrix
     for eclevel in eclevels, mask in 0:7
-        mat = qrcode("HELLO WORLD", eclevel=eclevel, compact=true, mask=mask)
+        mat = qrcode("HELLO WORLD", eclevel=eclevel, mask=mask)
         ec, m = qrdecode_format(mat; noerror=true) 
         @test ec == eclevel && m == mask
     end
@@ -117,7 +117,7 @@ end
     msg = "HELLO WORLD"
     for eclevel in eclevels
         mask = rand(0:7)
-        mat = qrcode(msg, eclevel=eclevel, compact=true, mask=mask)
+        mat = qrcode(msg, eclevel=eclevel, mask=mask)
         v, ec, m, databits = qrdecompose(mat; noerror=true)
         msgbits = encodemessage(msg, Alphanumeric(), eclevel, v)
         @test ec == eclevel && m == mask && databits == msgbits
@@ -127,7 +127,7 @@ end
     msg = "HELLO WORLD"
     for version in 1:40
         mask = rand(0:7)
-        mat = qrcode(msg; compact=true, version=version, mask=mask)
+        mat = qrcode(msg; version=version, mask=mask)
         v, ec, m, databits = qrdecompose(mat; noerror=true)
         msgbits = encodemessage(msg, Alphanumeric(), Medium(), version)
         @test databits == msgbits && v == version && ec == Medium() && m == mask
@@ -138,7 +138,7 @@ end
 @testset "Integrity of the QRCode -- modify one bit" begin
     ## test matrix
     msg = "HELLO WORLD"
-    mat = qrcode(msg; compact=true)
+    mat = qrcode(msg)
     n = size(mat, 1)
 
     ## Finder pattern + Separators

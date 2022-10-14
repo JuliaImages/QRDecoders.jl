@@ -128,7 +128,7 @@ Compute the erasures/error locator polynomial Λ(x) from the erasures/errors pos
 """
 function erratalocator_polynomial(errpos::AbstractVector{T}) where T
     isempty(errpos) && return unit(Poly{T})
-    return reduce(*, Poly([one(T), gfpow2(i)]) for i in errpos)
+    return reduce(*, Poly{T}([one(T), gfpow2(i)]) for i in errpos)
 end
 
 """
@@ -204,7 +204,7 @@ Computes the modified syndrome polynomial.
 Berlekamp-Massey algorithm, compute the error locator polynomial Λ(x)(given the erased positions).
 The `check` tag ensures that Λx can be decomposed into products of one degree polynomials.
 """
-function erratalocator_polynomial(sydpoly::Poly{T}, erasures::AbstractVector, nsym::Integer; check=false) where T
+function erratalocator_polynomial(sydpoly::Poly{T}, erasures::AbstractVector{T}, nsym::Integer; check=false) where T
     ## syndromes
     S = sydpoly.coeff
     ## initialize via erased data
@@ -224,7 +224,7 @@ function erratalocator_polynomial(sydpoly::Poly{T}, erasures::AbstractVector, ns
             Λx, Bx = Λx + Δ * xBx, xBx
         else # δ = 1
             L = r - L - ρ
-            Λx, Bx = Λx + Δ * xBx, T(gfinv(Δ)) * Λx
+            Λx, Bx = Λx + Δ * xBx, gfinv(Δ) * Λx
         end
     end
     rstripzeros!(Λx)

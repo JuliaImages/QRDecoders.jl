@@ -5,7 +5,7 @@
         msg = join(rand(alphabet, rand(1:cap)))
         @test getmode(msg) ⊆ mode
         version = getversion(msg, mode, eclevel)
-        mat = qrcode(msg, eclevel=eclevel, compact=true)
+        mat = qrcode(msg, eclevel=eclevel)
         info = qrdecode(mat; noerror=true, preferutf8=false)
         @test info.message == msg && 
               info.version == version &&
@@ -32,7 +32,7 @@ end
     # test for versions
     msg = "Hello, world!"
     for v in 1:40
-        mat = qrcode(msg, version=v, compact=true)
+        mat = qrcode(msg, version=v)
         info = qrdecode(mat; preferutf8=false)
         exportqrcode(msg, "testimages/test$v.png", version=v)
         exportqrcode(msg, "testimages/test$v.jpg", version=v)
@@ -94,7 +94,7 @@ end
         mask = argmin(scores) - 1
         matrix = maskedmats[mask + 1]
 
-        mat = qrcode(msg; mode=mode, eclevel=eclevel, compact=true)
+        mat = qrcode(msg; mode=mode, eclevel=eclevel)
         @test mat == matrix
 
         # --- decoding --- #
@@ -232,14 +232,14 @@ end
 
 @testset "Byte Vs UTF8" begin
     msg = "Hello, world!"
-    mat = qrcode(msg, eclevel=Low(), compact=true)
+    mat = qrcode(msg, eclevel=Low())
     info = qrdecode(mat; noerror=true, preferutf8=false)
     @test info.mode == Byte() && info.eclevel == Low() && info.message == msg
     info = qrdecode(mat; noerror=true)
     @test info.mode == UTF8() && info.eclevel == Low() && info.message == msg
 
     msg = "123αβ"
-    mat = qrcode(msg, eclevel=Low(), compact=true)
+    mat = qrcode(msg, eclevel=Low())
     info = qrdecode(mat; noerror=true)
     @test info.mode == UTF8() && info.eclevel == Low() && info.message == msg
 
@@ -247,12 +247,12 @@ end
     bits = vcat(int2bitarray.(UInt8.(collect(msg)))...)
     @test !tryutf8(bits, 4)
 
-    mat = qrcode(msg, eclevel=Low(), compact=true)
+    mat = qrcode(msg, eclevel=Low())
     info = qrdecode(mat; noerror=true)
     @test info.mode == Byte() && info.eclevel == Low() && info.message == msg
     
     msg = "®123" # ®(0b10101110) can not be the first byte in UTF8
-    mat = qrcode(msg, eclevel=Low(), compact=true)
+    mat = qrcode(msg, eclevel=Low())
     info = qrdecode(mat; noerror=true)
     @test info.mode == Byte() && info.eclevel == Low() && info.message == msg
 end
@@ -263,7 +263,7 @@ end
         cap = last(characterscapacity[(eclevel, mode)]) >> 2
         msg = join(rand(Char, rand(1:cap)))
         version = getversion(msg, mode, eclevel)
-        mat = qrcode(msg, mode=mode, eclevel=eclevel, compact=true)
+        mat = qrcode(msg, mode=mode, eclevel=eclevel)
         info = qrdecode(mat; noerror=true, preferutf8=true)
         @test info.message == msg && 
               info.version == version &&
@@ -282,7 +282,7 @@ end
     @test_throws DecodeError trybyte(BitArray(undef, 16), 3) ## bits data is too short
 
     ## modified Data
-    mat = qrcode("123";compact=true)
+    mat = qrcode("123")
     mat[1, 9] = !mat[1, 9] ## format info
     @test_throws InfoError qrdecode(mat; noerror=true)
     mat[1, 9] = !mat[1, 9]

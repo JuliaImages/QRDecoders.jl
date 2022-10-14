@@ -30,7 +30,7 @@ end
     info = qrdecode(mat;  preferutf8=false)
     infobybm = qrdecode(mat; alg=BerlekampMassey(),  preferutf8=false)
     # read qr matrix from image
-    exportfrommatrix(mat, "testimages/randerr.png")
+    exportfrommatrix(mat, "testimages/randerr.png", width=0)
     @test getqrmatrix("testimages/randerr.png") == mat
 
     @test info == infobybm

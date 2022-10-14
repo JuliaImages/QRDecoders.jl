@@ -4,14 +4,6 @@ QR Codes decoder with support of `Numeric` mode, `Alphanumeric` mode, `Kanj` mod
 
 The decoding rules of QRDecoders.jl follow the ISO/IEC 18004:2000 standard and are compatible with [QRCoders.jl](http://github.com/JuliaImages/QRCoders.jl).
 
-# Installation
-The package is not yet registered. One can install it with the following command:
-```julia
-using Pkg
-# Pkg.add("QRDecoders") # not yet registered
-Pkg.add("http://github.com/JuliaImages/QRDecoders.jl)
-```
-
 # General Usage
 ## Example 1
 Decode a QR Code from a compact QR code matrix:
