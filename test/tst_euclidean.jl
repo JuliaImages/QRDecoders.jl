@@ -32,7 +32,7 @@ end
     rawmsg = randpoly(155)
     nsym = 100
     errpos = unique!(rand(0:254, 50)) # error positions
-    msg = rawmsg << nsym + geterrorcorrection(rawmsg, nsym)
+    msg = rawmsg << nsym + geterrcode(rawmsg, nsym)
     received = copy(msg)
     received.coeff[1 .+ errpos] .⊻= rand(1:255, length(errpos))
     @test euclidean_decoder(received, nsym) == msg
@@ -44,7 +44,7 @@ end
     rawmsg = randpoly(100)
     nsym = 155
     errpos = unique!(rand(0:254, 77)) # error positions
-    msg = rawmsg << nsym + geterrorcorrection(rawmsg, nsym)
+    msg = rawmsg << nsym + geterrcode(rawmsg, nsym)
     received = copy(msg)
     received.coeff[1 .+ errpos] .⊻= rand(1:255, length(errpos))
     @test euclidean_decoder(received, nsym) == msg
@@ -53,7 +53,7 @@ end
     rawmsg = randpoly(100)
     nsym = 155
     errpos = sample(0:254, 78; replace=false) # error positions
-    msg = rawmsg << nsym + geterrorcorrection(rawmsg, nsym)
+    msg = rawmsg << nsym + geterrcode(rawmsg, nsym)
     received = copy(msg)
     received.coeff[1 .+ errpos] .⊻= rand(1:255, length(errpos))
     # might be undetected (special property of Euclidean decoder)
@@ -63,7 +63,7 @@ end
     ### [0] -encode> [0, 0, 0] -transfer> [2, 3, 0] -correct> [2, 3, 1] -decode> [1] 
     rawmsg = Poly([0])
     nsym = 2
-    msg = rawmsg << nsym + geterrorcorrection(rawmsg, nsym)
+    msg = rawmsg << nsym + geterrcode(rawmsg, nsym)
     errpos = [0, 1]
     received = copy(msg)
     received.coeff[1 .+ errpos] .⊻= [2, 3]
@@ -76,13 +76,13 @@ end
     ### length of the received message is too long
     rawmsg = randpoly(100)
     nsym = 156
-    msg = rawmsg << nsym + geterrorcorrection(rawmsg, nsym)
+    msg = rawmsg << nsym + geterrcode(rawmsg, nsym)
     @test_throws DomainError euclidean_decoder(msg, nsym)
     
     ### number of erasures exceeds the capacity of RS-Code
     rawmsg = randpoly(150)
     nsym = 50
-    msg = rawmsg << nsym + geterrorcorrection(rawmsg, nsym)
+    msg = rawmsg << nsym + geterrcode(rawmsg, nsym)
     erasures = sample(0:199, 51; replace=false)
     @test_throws ReedSolomonError euclidean_decoder(msg, erasures, nsym)
 
@@ -92,7 +92,7 @@ end
     nsym = 100
     errpos = sample(0:254, 70; replace=false) # error positions
     erasures = errpos[31:70]
-    msg = rawmsg << nsym + geterrorcorrection(rawmsg, nsym)
+    msg = rawmsg << nsym + geterrcode(rawmsg, nsym)
     received = copy(msg)
     received.coeff[1 .+ errpos] .⊻= rand(1:255, length(errpos))
     @test euclidean_decoder(received, erasures, nsym) == msg
@@ -127,7 +127,7 @@ end
     nsym = 155
     errpos = sample(0:254, 105; replace=false) # error positions
     erasures = errpos[51:105]
-    msg = rawmsg << nsym + geterrorcorrection(rawmsg, nsym)
+    msg = rawmsg << nsym + geterrcode(rawmsg, nsym)
     received = copy(msg)
     received.coeff[1 .+ errpos] .⊻= rand(1:255, length(errpos))
     @test euclidean_decoder(received, erasures, nsym) == msg
@@ -151,7 +151,7 @@ end
     nsym = 2 * v + ρ - 1
     errpos = sample(0:(nsym + 100 - 1), nsym + 1; replace=false) # error positions
     erasures = errpos[1:ρ]
-    msg = rawmsg << nsym + geterrorcorrection(rawmsg, nsym)
+    msg = rawmsg << nsym + geterrcode(rawmsg, nsym)
     received = copy(msg)
     received.coeff[1 .+ errpos] .⊻= rand(1:255, length(errpos))
     # might be undetected (special property of Euclidean decoder)
@@ -160,7 +160,7 @@ end
     ### samll case
     rawmsg = Poly([0])
     nsym = 3
-    msg = rawmsg << nsym + geterrorcorrection(rawmsg, nsym)
+    msg = rawmsg << nsym + geterrcode(rawmsg, nsym)
     errpos = [0, 1]
     erasures = [0]
     received = copy(msg)
@@ -184,7 +184,7 @@ end
     ### 2 + 2 * 2 > 4
     rawmsg = Poly([0])
     nsym = 4
-    msg = rawmsg << nsym + geterrorcorrection(rawmsg, nsym)
+    msg = rawmsg << nsym + geterrcode(rawmsg, nsym)
     errpos = [0, 1, 2, 3]
     erasures = [0, 1]
     received = copy(msg)
