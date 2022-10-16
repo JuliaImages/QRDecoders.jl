@@ -85,8 +85,8 @@ end
     exportfrommatrix(matrix::AbstractMatrix
                    , path::AbstractString = "qrcode.png"
                    ; targetsize::Int = 5
-                   , compact::Bool = false
-                   , scale::Real = 0)
+                   , scale::Real = 0
+                   , width::Int = 0)
 
 Generate a QR code image from a matrix.
 This can be used to generate a QR code with errors.
@@ -94,12 +94,11 @@ This can be used to generate a QR code with errors.
 function exportfrommatrix(matrix::AbstractMatrix
                     , path::AbstractString = "qrcode.png"
                     ; targetsize::Int = 5
-                    , compact::Bool = false
+                    , width = 4
                     , scale::Real = 0)
-    if compact
-        matrix = falses(size(matrix) .+ (8, 8))
-        matrix[5:end-4, 5:end-4] = matrix
-    end
+    background = falses(size(matrix) .+ (2 * width, 2 * width))
+    background[width+1:end-width, width+1:end-width] = matrix
+    matrix = background
     if iszero(scale)
         pixels = size(matrix, 1)
         scale = ceil(Int, 72 * targetsize / 2.45 / pixels)

@@ -1,16 +1,12 @@
 # QRDecoders.jl
 
+[![][docs-dev-img]][docs-dev-url]
+[![][action-img]][action-url]
+[![][codecov-img]][codecov-url]
+
 QR Codes decoder with support of `Numeric` mode, `Alphanumeric` mode, `Kanj` mode, `Byte` mode and `UTF8` mode.
 
 The decoding rules of QRDecoders.jl follow the ISO/IEC 18004:2000 standard and are compatible with [QRCoders.jl](http://github.com/JuliaImages/QRCoders.jl).
-
-# Installation
-The package is not yet registered. One can install it with the following command:
-```julia
-using Pkg
-# Pkg.add("QRDecoders") # not yet registered
-Pkg.add("http://github.com/JuliaImages/QRDecoders.jl)
-```
 
 # General Usage
 ## Example 1
@@ -79,3 +75,12 @@ Furthermore, there is one more option for the decoder, which is `noerror`. If `n
 
 # Acknowledgement
 The QRDecoders.jl is created as part of the [OSPP'2022 project](https://summer-ospp.ac.cn/) guided by [Johnny Chen](http://github.com/johnnychen94).
+
+<!-- URLS -->
+
+[action-img]: https://github.com/JuliaImages/QRDecoders.jl/actions/workflows/CI.yml/badge.svg
+[action-url]: https://github.com/JuliaImages/QRDecoders.jl/actions
+[codecov-img]: https://codecov.io/gh/JuliaImages/QRDecoders.jl/branch/main/graph/badge.svg
+[codecov-url]: https://codecov.io/gh/JuliaImages/QRDecoders.jl?branch=master
+[docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
+[docs-dev-url]: https://JuliaImages.github.io/QRDecoders.jl/dev/

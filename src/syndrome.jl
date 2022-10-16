@@ -22,11 +22,11 @@ using QRDecoders: ReedSolomonError, ReedSolomonAlgorithm, Euclidean, BerlekampMa
 
 ## common part
 """
-    polynomial_eval(p::Poly, x::Int)
+    polynomial_eval(p::Poly, x::Integer)
 
 Evaluates the polynomial p(x) at x in GF256.
 """
-function polynomial_eval(p::Poly, x::Int)
+function polynomial_eval(p::Poly, x::Integer)
     val = last(p.coeff) ## leading term
     coeff = @view(p.coeff[end-1:-1:1])
     return foldl((i, j) -> mult(i, x) ⊻ j, coeff; init=val)
@@ -37,11 +37,10 @@ end
 
 Computes the derivative of the polynomial p.
 """
-function derivative_polynomial(p::Poly)
-    lp = length(p)
-    lp == 1 && return zero(Poly) ## constant polynomial
+function derivative_polynomial(p::Poly{T}) where T
+    length(p) == 1 && return zero(Poly{T}) ## constant polynomial
     coeff = [isodd(i) * c for (i, c) in enumerate(@view(p.coeff[2:end]))]
-    return Poly(coeff)
+    return Poly{T}(coeff)
 end
 
 """
@@ -49,37 +48,45 @@ end
 
 Horner's rule, find the polynomial q(x) such that p(x)-(x-a)q(x) is a constant polynomial.
 """
-function reducebyHorner(p::Poly, a::Int)
-    reduced = Vector{Int}(undef, length(p))
+function reducebyHorner(p::Poly{T}, a::Integer) where T
+    reduced = Vector{T}(undef, length(p))
     reduced[end] = val = last(p.coeff)
     coeff = @view(p.coeff[end-1:-1:1])
     for (i, c) in enumerate(coeff)
         val = mult(val, a) ⊻ c
         reduced[end-i] = val
     end
-    return Poly(reduced)
+    return Poly{T}(reduced)
 end
 
 """
     findroots(p::Poly)
 
 Computes the roots of the polynomial p using Horner's method.
-Returns a empty list if p(x) contains duplicate roots or roots not in GF(256).
+
+**The output will be an empty list if p(x) contains duplicate roots or roots not in GF(256).**
 """
-function findroots(p::Poly)
+function findroots(p::Poly{T}) where T
     n = length(p) - 1
-    roots = Vector{Int}(undef, n)
-    for r in 0:255
+    roots = Vector{T}(undef, n)
+    for r in 0x0:0xff
         reducepoly = reducebyHorner(p, r)
         ## decrease the degree of the polynomial by 1
-        popfirst!(reducepoly.coeff) == 0 || continue
+        iszero(popfirst!(reducepoly.coeff)) || continue
         roots[n] = r
         n, p = n - 1, reducepoly
-        n == 0 && return reverse!(roots)
+        n == 0 && return roots
     end
     ## p(x) contains duplicate roots or roots not in GF(256)
-    return Int[] 
+    return Vector{T}()
 end
+
+"""
+    root2pos(root::Integer)
+
+Caculate `pos` s.t. `gfpow2(-pos) == root`.
+"""
+root2pos(root::Integer) = isone(root) ? 0x0 : 0xff - gflog2(root)
 
 """
     getpositions(Λx::Poly)
@@ -87,17 +94,17 @@ end
 Caculate positions of errors from the error locator polynomial Λx.
 Note that the indexs start from 0.
 """
-getpositions(Λx::Poly) = mod.(-gflog2.(findroots(Λx)), 255)
+getpositions(Λx::Poly) = root2pos.(findroots(Λx))
 
 """
-    syndrome_polynomial(received::Poly, nsym::Int)
+    syndrome_polynomial(received::Poly, nsym::Integer)
 
 Computes the syndrome polynomial S(x) for the received polynomial where `nsym` is the number of syndromes.
 """
-function syndrome_polynomial(received::Poly, nsym::Int)
+function syndrome_polynomial(received::Poly{T}, nsym::Integer) where T
     ## S(x) = ∑ᵢsᵢxⁱ where sᵢ = R(2ⁱ) = E(2ⁱ)
-    syndromes = polynomial_eval.(Ref(received), gfpow2.(0:(nsym-1)))
-    return Poly(syndromes)
+    syndromes = polynomial_eval.(Ref(received), gfpow2.(0:nsym-1))
+    return Poly{T}(syndromes)
 end
 
 """
@@ -105,23 +112,23 @@ end
 
 Return the evaluator polynomial Ω(x) where Ω(x)≡S(x)Λ(x) mod xⁿ.
 """
-evaluator_polynomial(sydpoly::Poly, errlocpoly::Poly, nsym::Int) = Poly((sydpoly * errlocpoly).coeff[1:nsym])
+evaluator_polynomial(sydpoly::Poly, errlocpoly::Poly, nsym::Integer) = Poly((sydpoly * errlocpoly).coeff[1:nsym])
 
 """
     haserrors(received::Poly, nsym::Int)
 
 Returns true if the received polynomial has errors. (may go undetected when the number of errors exceeds n)
 """
-haserrors(received::Poly, nsym::Int) = !iszeropoly(syndrome_polynomial(received, nsym))
+haserrors(received::Poly, nsym::Integer) = !iszeropoly(syndrome_polynomial(received, nsym))
 
 """
     erratalocator_polynomial(errpos::AbstractVector)
 
 Compute the erasures/error locator polynomial Λ(x) from the erasures/errors positions.
 """
-function erratalocator_polynomial(errpos::AbstractVector)
-    isempty(errpos) && return unit(Poly)
-    return reduce(*, Poly([1, gfpow2(i)]) for i in errpos)
+function erratalocator_polynomial(errpos::AbstractVector{T}) where T
+    isempty(errpos) && return unit(Poly{T})
+    return reduce(*, Poly{T}([one(T), gfpow2(i)]) for i in errpos)
 end
 
 """
@@ -130,7 +137,7 @@ end
 Compute the error locator polynomial Λ(x)(without erasures).
 The `check` tag ensures that Λx can be decomposed into products of one degree polynomials.
 """
-erratalocator_polynomial(sydpoly::Poly, nsym::Int; check=false) = erratalocator_polynomial(sydpoly, Int[], nsym; check=check)
+erratalocator_polynomial(sydpoly::Poly{T}, nsym::Integer; check=false) where T = erratalocator_polynomial(sydpoly, T[], nsym; check=check)
 
 """
     forney_algorithm(Λx::Poly, Ωx::Poly, errpos::AbstractVector)
@@ -138,11 +145,11 @@ erratalocator_polynomial(sydpoly::Poly, nsym::Int; check=false) = erratalocator_
 Forney algorithm, returns the error-corrected values.
 eₖ = 2^{iₖ}⋅Ω(2^{-iₖ}) / Λ'(2^{-iₖ})
 """
-function forney_algorithm(Λx::Poly, Ωx::Poly, errpos::AbstractVector)
+function forney_algorithm(Λx::Poly{T}, Ωx::Poly{T}, errpos::AbstractVector) where T <: Integer
     ## derivative of the error locator polynomial
     errderi = derivative_polynomial(Λx)
-    forneynum(k) = mult(gfpow2(k), polynomial_eval(Ωx, gfpow2(-k))) ## numerator
-    forneyden(k) = polynomial_eval(errderi, gfpow2(-k)) ## denominator
+    forneynum(k) = mult(gfpow2(k), polynomial_eval(Ωx, gfpow2(0xff-k))) ## numerator
+    forneyden(k) = polynomial_eval(errderi, gfpow2(0xff-k)) ## denominator
     return @. divide(forneynum(errpos), forneyden(errpos))
 end
 
@@ -153,8 +160,8 @@ Forney algorithm, computes the values (error magnitude) to correct the input mes
 
 Warnning: The output polynomial might be incorrect if `errpos` is incomplete.
 """
-fillerasures(received::Poly, errpos::AbstractVector, nsym::Int) = fillerasures!(copy(received), errpos, nsym)
-function fillerasures!(received::Poly, errpos::AbstractVector, nsym::Int)
+fillerasures(received::Poly, errpos::AbstractVector, nsym::Integer) = fillerasures!(copy(received), errpos, nsym)
+function fillerasures!(received::Poly, errpos::AbstractVector, nsym::Integer)
     ## number of errors exceeds limitation of the RS-code
     length(errpos) > nsym && throw(ReedSolomonError())
 
@@ -197,23 +204,23 @@ Computes the modified syndrome polynomial.
 Berlekamp-Massey algorithm, compute the error locator polynomial Λ(x)(given the erased positions).
 The `check` tag ensures that Λx can be decomposed into products of one degree polynomials.
 """
-function erratalocator_polynomial(sydpoly::Poly, erasures::AbstractVector, nsym::Int; check=false)
+function erratalocator_polynomial(sydpoly::Poly{T}, erasures::AbstractVector{T}, nsym::Integer; check=false) where T
     ## syndromes
     S = sydpoly.coeff
     ## initialize via erased data
     L = ρ = length(erasures) ## number of erased data
     Λx = erratalocator_polynomial(erasures) ## erased locator polynomial
     Bx = copy(Λx)
-    x = Poly([0, 1])
+    x = Poly([zero(T), one(T)])
 
     ## discrepancy Δᵣ = Λ₀Sᵣ₋₁ + Λ₁Sᵣ₋₂ + ⋯ 
-    getdelta(r) = @views reduce(⊻, mult(i, j) for (i, j) in zip(S[r:-1:1], Λx.coeff))
+    getdelta(r)::T = @views reduce(⊻, mult(i, j) for (i, j) in zip(S[r:-1:1], Λx.coeff))
     
     ## iteration
     for r in (ρ + 1):nsym
         Δ = getdelta(r)
         xBx = x * Bx
-        if Δ == 0 || 2 * L > r + ρ - 1 # condition updates
+        if iszero(Δ) || 2 * L > r + ρ - 1 # condition updates
             Λx, Bx = Λx + Δ * xBx, xBx
         else # δ = 1
             L = r - L - ρ
@@ -238,9 +245,9 @@ end
 
 Berlekamp-Massey algorithm, decode message polynomial from received polynomial(given erasures).
 """
-berlekamp_massey_decoder(received::Poly, erasures::AbstractVector, nsym::Int) = berlekamp_massey_decoder!(copy(received), erasures, nsym)
+berlekamp_massey_decoder(received::Poly, erasures::AbstractVector, nsym::Integer) = berlekamp_massey_decoder!(copy(received), erasures, nsym)
 
-function berlekamp_massey_decoder!(received::Poly, erasures::AbstractVector, nsym::Int)
+function berlekamp_massey_decoder!(received::Poly, erasures::AbstractVector, nsym::Integer)
     ## check data
     length(received) > 255 && throw(DomainError(received, "length of received polynomial must be less than 256"))
     length(erasures) > nsym && throw(ReedSolomonError())
@@ -269,7 +276,7 @@ end
 
 Berlekamp-Massey algorithm, decode message polynomial from received polynomial(without erasures).
 """
-berlekamp_massey_decoder(received::Poly, nsym::Int) = berlekamp_massey_decoder!(copy(received), Int[], nsym)
+berlekamp_massey_decoder(received::Poly{T}, nsym::Integer) where T = berlekamp_massey_decoder!(copy(received), T[], nsym)
 
 ### --- division line --- ###
 
@@ -313,10 +320,11 @@ Here we obtain the recursive formula of ``u_k`` and ``v_k``.
     v_{k+1} = v_k - q_kv_{k+1}
 \end{aligned}
 """
-function extended_euclidean_divide(r₁::Poly, r₂::Poly)
-    u₁, v₁, u₂, v₂ = Poly.([[1], [0], [0], [1]])
+extended_euclidean_divide(r₁::Poly, r₂::Poly) = extended_euclidean_divide!(copy(r₁), copy(r₂))
+function extended_euclidean_divide!(r₁::Poly{T}, r₂::Poly{T}) where T
+    u₁, v₁, u₂, v₂ = unit(Poly{T}), zero(Poly{T}), zero(Poly{T}), unit(Poly{T})
     iszeropoly(r₂) && return u₁, v₁, r₁
-    q, r₃ = euclidean_divide(r₁, r₂)
+    q, r₃ = euclidean_divide!(r₁, r₂)
     # case r₁ == 0 => r₁ = 0⋅r₂ + 0 
     #              => r₃ == 0 => covered by the following loop
     while !iszeropoly(r₃) ## if rₖ == 0, then r_{k-1} = gcd(r₁, r₂)
@@ -326,7 +334,7 @@ function extended_euclidean_divide(r₁::Poly, r₂::Poly)
         # @assert r₂ = u₁raw₁ + v₁raw₂
         # @assert r₃ = u₂raw₁ + v₂raw₂
         r₁, r₂ = r₂, r₃
-        q, r₃ = euclidean_divide(r₁, r₂)
+        q, r₃ = euclidean_divide!(r₁, r₂)
     end
     return u₂, v₂, r₂
 end
@@ -337,9 +345,9 @@ end
 Yasuo Sugiyama's adaptation of the Extended Euclidean algorithm.
 Find u(x), v(x) and r(x) s.t. r(x) = u(x)r₁(x) + v(x)r₂(x) where r(x) = gcd(r₁(x), r₂(x)) or deg(r(x)) ≤ upperdeg.
 """
-Sugiyama_euclidean_divide(r₁::Poly, r₂::Poly, upperdeg::Int) = Sugiyama_euclidean_divide!(copy(r₁), copy(r₂), upperdeg)
-function Sugiyama_euclidean_divide!(r₁::Poly, r₂::Poly, upperdeg::Int)
-    u₁, v₁, u₂, v₂ = Poly.([[1], [0], [0], [1]])
+Sugiyama_euclidean_divide(r₁::Poly, r₂::Poly, upperdeg::Integer) = Sugiyama_euclidean_divide!(copy(r₁), copy(r₂), upperdeg)
+function Sugiyama_euclidean_divide!(r₁::Poly{T}, r₂::Poly{T}, upperdeg::Integer) where T
+    u₁, v₁, u₂, v₂ = unit(Poly{T}), zero(Poly{T}), zero(Poly{T}), unit(Poly{T})
     iszeropoly(r₂) && return u₁, v₁, r₁
     q, r₃ = euclidean_divide!(r₁, r₂) # r₁ can be discarded for each time
     while degree(r₂) > upperdeg && !iszeropoly(r₃)
@@ -359,8 +367,8 @@ end
 
 Decode the received polynomial using the Euclidean algorithm(with erasures).
 """
-euclidean_decoder(received::Poly, erasures::AbstractVector, nsym::Int) = euclidean_decoder!(copy(received), erasures, nsym)
-function euclidean_decoder!(received::Poly, erasures::AbstractVector, nsym::Int)
+euclidean_decoder(received::Poly, erasures::AbstractVector, nsym::Integer) = euclidean_decoder!(copy(received), erasures, nsym)
+function euclidean_decoder!(received::Poly{T}, erasures::AbstractVector, nsym::Integer) where T <:Integer
     ## check data
     length(received) > 255 && throw(DomainError(received, "length of received polynomial must be less than 256"))
     length(erasures) > nsym && throw(ReedSolomonError())
@@ -371,7 +379,7 @@ function euclidean_decoder!(received::Poly, erasures::AbstractVector, nsym::Int)
     
     ## erasures locator polynomial Γx
     Γx = erratalocator_polynomial(erasures)
-    xn = Poly(push!(zeros(Int, nsym), 1))
+    xn = Poly(push!(zeros(T, nsym), one(T)))
     
     ## deg(Ω(x))  ≤ ⌊(nsym + length(erasures)) / 2⌋ - 1
     upperdeg = (nsym + length(erasures)) >> 1 - 1
@@ -397,15 +405,15 @@ end
 
 Decode the received polynomial using the Euclidean algorithm(without erasures).
 """
-euclidean_decoder(received::Poly, nsym::Int) = euclidean_decoder!(copy(received), Int[], nsym)
+euclidean_decoder(received::Poly{T}, nsym::Integer) where T = euclidean_decoder!(copy(received), T[], nsym)
 
 """
     RSdecoder(received::Poly, nsym::Int, ::ReedSolomonAlgorithm)
 
 Decode the message polynomial using the given Reed-Solomon algorithm.
 """
-RSdecoder(received::Poly, nsym::Int, ::Euclidean) = euclidean_decoder(received, nsym)
-RSdecoder(received::Poly, nsym::Int, ::BerlekampMassey) = berlekamp_massey_decoder(received, nsym)
+RSdecoder(received::Poly, nsym::Integer, ::Euclidean) = euclidean_decoder(received, nsym)
+RSdecoder(received::Poly, nsym::Integer, ::BerlekampMassey) = berlekamp_massey_decoder(received, nsym)
 # RSdecoder(received::Poly, erasures::AbstractVector, nsym::Int, ::Euclidean) = euclidean_decoder(received, erasures, nsym)
 # RSdecoder(received::Poly, erasures::AbstractVector, nsym, ::BerlekampMassey) = berlekamp_massey_decoder(received, erasures, nsym)
 end

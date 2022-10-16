@@ -4,7 +4,7 @@
     # random test
     rawmsg = randpoly(100)
     nsym = 100
-    msgpoly = rawmsg << nsym + geterrorcorrection(rawmsg, nsym)
+    msgpoly = rawmsg << nsym + geterrcode(rawmsg, nsym)
     received = randerr!(copy(msgpoly), 50)
     decodebyeu = RSdecoder(received, nsym, Euclidean())
     decodebybm = RSdecoder(received, nsym, BerlekampMassey())
@@ -14,7 +14,7 @@
     rawmsg = Poly([1])
     nsym = 3
     # msgpoly = Poly([8, 14, 7, 1])
-    msgpoly = rawmsg << nsym + geterrorcorrection(rawmsg, nsym)
+    msgpoly = rawmsg << nsym + geterrcode(rawmsg, nsym)
     received = Poly([100, 14, 7, 70])
     # It is true that the received polynomial is closer to the message polynomial
     # encode by Poly([1]) though the number of errors exceeds the limitation
@@ -30,7 +30,7 @@ end
     info = qrdecode(mat;  preferutf8=false)
     infobybm = qrdecode(mat; alg=BerlekampMassey(),  preferutf8=false)
     # read qr matrix from image
-    exportfrommatrix(mat, "testimages/randerr.png")
+    exportfrommatrix(mat, "testimages/randerr.png", width=0)
     @test getqrmatrix("testimages/randerr.png") == mat
 
     @test info == infobybm
