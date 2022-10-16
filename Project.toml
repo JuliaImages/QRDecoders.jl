@@ -1,7 +1,7 @@
 name = "QRDecoders"
 uuid = "d4999880-6331-4276-8b7d-7ee1f305cff8"
 authors = ["rex <1073853456@qq.com> and contributors"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
@@ -13,7 +13,7 @@ QRCoders = "f42e9828-16f3-11ed-2883-9126170b272d"
 FileIO = "1"
 ImageIO = "0.3, 0.4, 0.5, 0.6"
 ImageTransformations = "0.9"
-QRCoders = "1.2"
+QRCoders = "1.2.1"
 julia = "1.3"
 
 [extras]

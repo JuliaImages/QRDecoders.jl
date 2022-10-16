@@ -31,7 +31,7 @@ using QRDecoders
 using QRDecoders:
     # version and format
     hamming_weight, hamming_distance, 
-    qrversion, qrdecode_version, qrformat, qrdecode_format,
+    qrdecode_version, qrdecode_format,
     # decompose QR code 
     extract_databits, deinterleave, block2bits, 
     # decode data
