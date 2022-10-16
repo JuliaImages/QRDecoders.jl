@@ -80,7 +80,7 @@ The QRDecoders.jl is created as part of the [OSPP'2022 project](https://summer-o
 
 [action-img]: https://github.com/JuliaImages/QRDecoders.jl/actions/workflows/CI.yml/badge.svg
 [action-url]: https://github.com/JuliaImages/QRDecoders.jl/actions
-[codecov-img]: https://codecov.io/gh/JuliaImages/QRDecoders.jl/branch/main/graph/badge.svg
+[codecov-img]: https://codecov.io/gh/JuliaImages/QRDecoders.jl/branch/master/graph/badge.svg
 [codecov-url]: https://codecov.io/gh/JuliaImages/QRDecoders.jl?branch=master
 [docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
 [docs-dev-url]: https://JuliaImages.github.io/QRDecoders.jl/dev/

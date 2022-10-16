@@ -70,15 +70,14 @@ end
     ecblock = reverse!(received.coeff[1:end-1])
     @test [1] == @test_logs (:warn, ReedSolomonError()
                  ) correct_message(block, ecblock, Euclidean())
-    
     msg = "Hello, world!"
     ncodewords, _ = getecinfo(msg)
     mat = qrcode_with_randerr(msg, ncodewords >> 1 + 1)
     try
-        @test [1] == @test_logs (:warn, ReedSolomonError()
-                 ) correct_message(block, ecblock, Euclidean())
+        # Euclidean decoder may correct the message
+        qrdecode(mat; alg=Euclidean())
     catch
-        @test_throws ReedSolomonError qrdecode(mat)
+        @test_throws ReedSolomonError qrdecode(mat; alg=Euclidean())
     end
     @test_throws ReedSolomonError qrdecode(mat; alg=BerlekampMassey())
 
@@ -86,10 +85,10 @@ end
     ncodewords, _ = getecinfo(msg)
     mat = qrcode_with_randerr(msg, ncodewords >> 1 + 1)
     try
-        @test [1] == @test_logs (:warn, ReedSolomonError()
-                 ) correct_message(block, ecblock, Euclidean())
+        # Euclidean decoder may correct the message
+        qrdecode(mat; alg=Euclidean())
     catch
-        @test_throws ReedSolomonError qrdecode(mat)
+        @test_throws ReedSolomonError qrdecode(mat; alg=Euclidean())
     end
     @test_throws ReedSolomonError qrdecode(mat; alg=BerlekampMassey())
 end

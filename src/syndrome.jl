@@ -261,7 +261,7 @@ function berlekamp_massey_decoder!(received::Poly, erasures::AbstractVector, nsy
 
     ## error positions
     errpos = getpositions(Λx)
-    isempty(errpos) && throw(ReedSolomonError())
+    (isempty(errpos) || maximum(errpos) ≥ length(received)) && throw(ReedSolomonError())
 
     ## evaluator polynomial Ω(x)≡S(x)Λ(x) mod xⁿ
     Ωx = evaluator_polynomial(sydpoly, Λx, nsym)
@@ -319,6 +319,7 @@ Here we obtain the recursive formula of ``u_k`` and ``v_k``.
     u_{k+1} &= u_k - q_ku_{k+1},\quad
     v_{k+1} = v_k - q_kv_{k+1}
 \end{aligned}
+```
 """
 extended_euclidean_divide(r₁::Poly, r₂::Poly) = extended_euclidean_divide!(copy(r₁), copy(r₂))
 function extended_euclidean_divide!(r₁::Poly{T}, r₂::Poly{T}) where T
