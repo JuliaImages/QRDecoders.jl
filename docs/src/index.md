@@ -62,6 +62,7 @@ Tools for Syndrome Decoding.
 QRDecoders.Syndrome.syndrome_polynomial
 QRDecoders.Syndrome.evaluator_polynomial
 QRDecoders.Syndrome.erratalocator_polynomial
+QRDecoders.Syndrome.forney_algorithm
 QRDecoders.Syndrome.haserrors
 QRDecoders.Syndrome.fillerasures
 QRDecoders.Syndrome.Sugiyama_euclidean_divide
@@ -77,6 +78,7 @@ QRDecoders.Syndrome.reducebyHorner
 QRDecoders.Syndrome.getpositions
 QRDecoders.Syndrome.extended_euclidean_divide
 ```
+
 ## Error types
 
 ```@docs
