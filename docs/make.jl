@@ -9,5 +9,5 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/RexWzh/QRDecoders.jl",
+    repo="github.com/JuliaImages/QRDecoders.jl",
 )
