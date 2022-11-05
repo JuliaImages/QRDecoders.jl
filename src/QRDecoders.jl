@@ -3,12 +3,13 @@ module QRDecoders
 export Euclidean, BerlekampMassey
 export euclidean_decoder, berlekamp_massey_decoder, RSdecoder
 export InfoError, DecodeError, ReedSolomonError
-export qrdecompose, qrdecode
+export qrdecompose, qrdecode, getqrmatrix, getqrmatrices
 export QRInfo
 
 using QRCoders
 using ImageTransformations: imresize
 using FileIO: load
+using ColorTypes
 
 """
     ReedSolomonError <: Exception
