@@ -1,7 +1,7 @@
 name = "QRDecoders"
 uuid = "d4999880-6331-4276-8b7d-7ee1f305cff8"
 authors = ["rex <1073853456@qq.com> and contributors"]
-version = "0.1.1"
+version = "0.1.2"
 
 [deps]
 ColorTypes = "3da002f7-5984-5a60-b8a6-cbb66c0b333f"
@@ -15,4 +15,12 @@ ColorTypes = "0.8 - 0.11"
 FileIO = "1"
 ImageIO = "0.3, 0.4, 0.5, 0.6"
 ImageTransformations = "0.9"
+QRCoders = "1.3.1"
 julia = "1.3"
+
+[extras]
+StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["StatsBase", "Test"]

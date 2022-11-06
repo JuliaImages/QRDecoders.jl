@@ -30,14 +30,15 @@ with or without white border, i.e. the image should not
 contain any non-QR-Code information.
 """
 function getqrmatrix(imgpath::AbstractString)
-    ext, mat = last(split(imgpath, '.')), load(imgpath)
+    ext = last(split(imgpath, '.'))
     # png image
-    ext == "png" && return getqrmatrix(mat)
+    ext == "png" && return getqrmatrix(load(imgpath))
     # binarize for jpg
-    ext == "jpg" && return getqrmatrix(round.(mat))
+    ext == "jpg" && return getqrmatrix(round.(load(imgpath)))
     # gif image
     if ext == "gif"
         # static image
+        mat = load(imgpath)
         ndims(mat) == 2 || throw(ArgumentError("The input image $imgpath is not a static image. Try `getqrmatrices` instead."))
         return getqrmatrix(Gray.(mat))
     end

@@ -13,8 +13,10 @@ The decoding rules of QRDecoders.jl are compatible with [QRCoders.jl](http://git
 ```@docs
 QRInfo
 qrdecode
+qrdecodegif
 qrdecompose
 getqrmatrix
+getqrmatrices
 ```
 
 ## Decoding procedures

@@ -283,6 +283,6 @@ function qrdecode( mat::AbstractMatrix
     return QRInfo(version, eclevel, mask, mode, msg)
 end
 
-function qrdecode_animate(mats::AbstractVector{<:AbstractMatrix}; kwargs...)
+function qrdecodegif(mats::AbstractVector{<:AbstractMatrix}; kwargs...)
     [qrdecode(mat; kwargs...) for mat in mats]
 end

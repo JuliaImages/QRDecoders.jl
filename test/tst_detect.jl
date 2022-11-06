@@ -38,8 +38,9 @@ end
         setproperty!.(codes, :version, maxv)
         exportqrcode(msgs, "testimages/test$i.gif")
         mats = getqrmatrices("testimages/test$i.gif")
+        infos = qrdecodegif("testimages/test$i.gif")
         @test mats == qrcode.(codes)
-        @test codes == qrdecode_animate(mats)
+        @test codes == qrdecodegif(mats) == infos
     end
 end
 
@@ -52,16 +53,16 @@ end
     @test_throws ArgumentError qrdecode("testimages/test.gif")
     @test_throws ArgumentError getqrmatrix("testimages/test.gif")
 
-    ## unsupported types for `getqrmatrices` or `qrdecode_animate`
+    ## unsupported types for `getqrmatrices` or `qrdecodegif`
     @test_throws ArgumentError getqrmatrix("testimages/test.webp")
     @test_throws ArgumentError getqrmatrix("testimages/test.apng") # etc...
 
-    ## static images for `getqrmatrices` or `qrdecode_animate`
+    ## static images for `getqrmatrices` or `qrdecodegif`
     exportqrcode(["test"], "testimages/test-static.gif")
     @test_throws ArgumentError getqrmatrices("testimages/test-static.gif")
     @test_throws ArgumentError getqrmatrices("testimages/test.png") 
     @test_throws ArgumentError getqrmatrices("testimages/test.jpg")
-    @test_throws ArgumentError qrdecode_animate("testimages/test.png")
-    @test_throws ArgumentError qrdecode_animate("testimages/test.jpg")
-    @test_throws ArgumentError qrdecode_animate("testimages/test-static.gif")
+    @test_throws ArgumentError qrdecodegif("testimages/test.png")
+    @test_throws ArgumentError qrdecodegif("testimages/test.jpg")
+    @test_throws ArgumentError qrdecodegif("testimages/test-static.gif")
 end

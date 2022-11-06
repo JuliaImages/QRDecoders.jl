@@ -3,7 +3,7 @@ module QRDecoders
 export Euclidean, BerlekampMassey
 export euclidean_decoder, berlekamp_massey_decoder, RSdecoder
 export InfoError, DecodeError, ReedSolomonError
-export qrdecompose, qrdecode, qrdecode_animate, getqrmatrix, getqrmatrices
+export qrdecompose, qrdecode, qrdecodegif, getqrmatrix, getqrmatrices
 export QRInfo
 
 using QRCoders
@@ -122,9 +122,9 @@ qrdecode(path::AbstractString; keywords...) = qrdecode(getqrmatrix(path); keywor
 
 QR code decoder for animated QR code.
 """
-function qrdecode_animate(path::AbstractString; keywords...)::Vector{QRCode}
+function qrdecodegif(path::AbstractString; keywords...)::Vector{QRInfo}
     mats = getqrmatrices(path)
-    return qrdecode_animate(mats; keywords...)
+    return qrdecodegif(mats; keywords...)
 end
 
 end

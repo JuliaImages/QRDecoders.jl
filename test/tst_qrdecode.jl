@@ -34,12 +34,12 @@ end
     for v in 1:40
         mat = qrcode(msg, version=v)
         info = qrdecode(mat; preferutf8=false)
-        exportqrcode(msg, "testimages/test$v.png", version=v)
-        exportqrcode(msg, "testimages/test$v.jpg", version=v)
-        mat2 = getqrmatrix("testimages/test$v.png")
-        mat3 = getqrmatrix("testimages/test$v.jpg")
-        info2 = qrdecode("testimages/test$v.png"; noerror=true, preferutf8=false)
-        info3 = qrdecode("testimages/test$v.jpg"; noerror=true, preferutf8=false)
+        exportqrcode(msg, "testimages/test.png", version=v)
+        exportqrcode(msg, "testimages/test.jpg", version=v)
+        mat2 = getqrmatrix("testimages/test.png")
+        mat3 = getqrmatrix("testimages/test.jpg")
+        info2 = qrdecode("testimages/test.png"; noerror=true, preferutf8=false)
+        info3 = qrdecode("testimages/test.jpg"; noerror=true, preferutf8=false)
         @test mat == mat2 == mat2
         @test info == info2 == info3
     end
