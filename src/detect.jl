@@ -27,14 +27,14 @@ Get the QR-code matrix from an image.
 
 Note that the input must be a **standard** QR-code image
 with or without white border, i.e. the image should not 
-contain any other non-QR-Code information.
+contain any non-QR-Code information.
 """
 function getqrmatrix(imgpath::AbstractString)
     ext, mat = last(split(imgpath, '.')), load(imgpath)
     # png image
     ext == "png" && return getqrmatrix(mat)
     # binarize for jpg
-    ext == "jpg" && return getqrmatrix(mat)
+    ext == "jpg" && return getqrmatrix(round.(mat))
     # gif image
     if ext == "gif"
         # static image
@@ -45,6 +45,11 @@ function getqrmatrix(imgpath::AbstractString)
     throw(ArgumentError("Unsupported image format for $ext"))
 end
 
+"""
+    getqrmatrix(mat::AbstractMatrix)
+
+Get the standard QR-code matrix from an image-matrix.
+"""
 function getqrmatrix(mat::AbstractMatrix)
     # find the left-top corner of the QR-code
     lt = findfirst(iszero, mat)
@@ -62,6 +67,11 @@ function getqrmatrix(mat::AbstractMatrix)
     return .! Bool.(imresize(compactmat; ratio=1/scale))
 end
 
+"""
+    getqrmatrices(imgpath::AbstractString)
+
+Get the standard QR-code matrices from a gif file.
+"""
 function getqrmatrices(imgpath::AbstractString)
     ext = last(split(imgpath, '.'))
     ext == "gif" || throw(ArgumentError("The input image $imgpath should be a gif image."))
