@@ -225,7 +225,7 @@ when dealing with `Byte` mode.
 
 The error correction algorithm is specified by the variable `alg`(default: `Euclidean`).
 """
-function qrdecode(mat::AbstractMatrix
+function qrdecode( mat::AbstractMatrix
                  ; noerror::Bool=false
                  , preferutf8::Bool=true
                  , alg::ReedSolomonAlgorithm=Euclidean()
@@ -281,4 +281,8 @@ function qrdecode(mat::AbstractMatrix
 
     ## pack up the result
     return QRInfo(version, eclevel, mask, mode, msg)
+end
+
+function qrdecodegif(mats::AbstractVector{<:AbstractMatrix}; kwargs...)
+    [qrdecode(mat; kwargs...) for mat in mats]
 end

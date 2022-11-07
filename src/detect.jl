@@ -21,33 +21,62 @@ julia> getalterpos(array)
 getalterpos(array::AbstractVector) = findall(@views array[2:end] .!= array[1:end-1])
 
 """
-    getqrmatrix(img)
+    getqrmatrix(imgpath::AbstractString)
 
 Get the QR-code matrix from an image.
 
 Note that the input must be a **standard** QR-code image
 with or without white border, i.e. the image should not 
-contain any other non-QR-Code information.
+contain any non-QR-Code information.
 """
-function getqrmatrix(img::AbstractString)
-    endswith(img, ".png") && return getqrmatrix(load(img))
-    # binarize the image
-    return getqrmatrix(round.(load(img)))
+function getqrmatrix(imgpath::AbstractString)
+    ext = last(split(imgpath, '.'))
+    # png image
+    ext == "png" && return getqrmatrix(load(imgpath))
+    # binarize for jpg
+    ext == "jpg" && return getqrmatrix(round.(load(imgpath)))
+    # gif image
+    if ext == "gif"
+        # static image
+        mat = load(imgpath)
+        ndims(mat) == 2 || throw(ArgumentError("The input image $imgpath is not a static image. Try `getqrmatrices` instead."))
+        return getqrmatrix(Gray.(mat))
+    end
+    # unsupported image format
+    throw(ArgumentError("Unsupported image format for $ext"))
 end
 
-function getqrmatrix(img::AbstractMatrix)
+"""
+    getqrmatrix(mat::AbstractMatrix)
+
+Get the standard QR-code matrix from an image-matrix.
+"""
+function getqrmatrix(mat::AbstractMatrix)
     # find the left-top corner of the QR-code
-    lt = findfirst(iszero, img)
+    lt = findfirst(iszero, mat)
     x1, y1 = lt.I
     # find the right down corner of the QR-code
-    x2 = findlast(iszero, @view(img[:, y1]))
+    x2 = findlast(iszero, @view(mat[:, y1]))
     y2 = y1 + x2 - x1
     rd = CartesianIndex((x2, y2))
-    compactmat = @view img[lt:rd] # image crop
+    compactmat = @view mat[lt:rd] # image crop
     # middle position of the left-top finder pattern
     mid = findfirst(!iszero, compactmat)[1] >> 1
     scale = findfirst(!iszero, @view(compactmat[mid, :])) - 1
     
     # rescale the QR-code matrix
     return .! Bool.(imresize(compactmat; ratio=1/scale))
+end
+
+"""
+    getqrmatrices(imgpath::AbstractString)
+
+Get the standard QR-code matrices from a gif file.
+"""
+function getqrmatrices(imgpath::AbstractString)
+    ext = last(split(imgpath, '.'))
+    ext == "gif" || throw(ArgumentError("The input image $imgpath should be a gif image."))
+    mat = Gray.(load(imgpath))
+    ndims(mat) == 3 || throw(ArgumentError("The input image $imgpath is not an animated image."))
+    return @views [getqrmatrix(mat[:, :, i]) for i in 1:size(mat, 3)]
 end

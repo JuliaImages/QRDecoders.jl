@@ -10,7 +10,7 @@ The decoding rules of QRDecoders.jl follow the ISO/IEC 18004:2000 standard and a
 
 # General Usage
 ## Example 1
-Decode a QR Code from a compact QR code matrix:
+Decode a QR Code from a compact QR code matrix.
 ```julia
 julia> # using Pkg; Pkg.add("QRCoders")
 julia> using QRCoders, QRDecoders
@@ -38,7 +38,14 @@ julia> exportqrcode("Hello World!", "qrcode.png")
 julia> qrdecode("qrcode.png")
 ```
 
-For more complicate cases, it is not supported yet, but will be added in the future work.
+Support for more complicate cases will be added in future work.
+
+## Example 3
+Decode message from an animated QR Code.
+```julia
+julia> exportqrcode(["hello", "julia"], "qrcode.gif")
+julia> qrdecodes("qrcode.gif")
+```
 
 ## Options
 There are some options for the decoder that can be set by the keyword arguments.

@@ -3,12 +3,13 @@ module QRDecoders
 export Euclidean, BerlekampMassey
 export euclidean_decoder, berlekamp_massey_decoder, RSdecoder
 export InfoError, DecodeError, ReedSolomonError
-export qrdecompose, qrdecode
+export qrdecompose, qrdecode, qrdecodegif, getqrmatrix, getqrmatrices
 export QRInfo
 
 using QRCoders
 using ImageTransformations: imresize
 using FileIO: load
+using ColorTypes
 
 """
     ReedSolomonError <: Exception
@@ -80,10 +81,24 @@ mutable struct QRInfo
     message::AbstractString # decoded data
 end
 
+"""
+    ==(info1::QRInfo, info2::QRInfo)
+
+Compare two `QRInfo` objects.
+"""
 function Base.:(==)(info1::QRInfo, info2::QRInfo)
     all(getfield(info1, f) == getfield(info2, f) for f in fieldnames(QRInfo))
 end
 
+"""
+    ==(info, code)
+
+Compare a `QRInfo` object and a `QRCode` object.
+"""
+function Base.:(==)(info::QRInfo, code::QRCode)
+    all(field -> getfield(info, field) == getfield(code, field), fieldnames(QRInfo))
+end
+Base.:(==)(code::QRCode, info::QRInfo) = info == code
 
 include("qrinfo.jl")
 include("syndrome.jl")
@@ -101,5 +116,15 @@ QR code decoder.
 For more information of the keywords, see `qrdecode(mat::AbstractMatrix; keywords...)`.
 """
 qrdecode(path::AbstractString; keywords...) = qrdecode(getqrmatrix(path); keywords...)
+
+"""
+    qrdecodes(path::AbstractString; keywords...)
+
+QR code decoder for animated QR code.
+"""
+function qrdecodegif(path::AbstractString; keywords...)::Vector{QRInfo}
+    mats = getqrmatrices(path)
+    return qrdecodegif(mats; keywords...)
+end
 
 end
