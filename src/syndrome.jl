@@ -126,10 +126,11 @@ haserrors(received::Poly, nsym::Integer) = !iszeropoly(syndrome_polynomial(recei
 
 Compute the erasures/error locator polynomial Λ(x) from the erasures/errors positions.
 """
-function erratalocator_polynomial(errpos::AbstractVector{T}) where T
+function erratalocator_polynomial(::Type{T}, errpos::AbstractVector) where T
     isempty(errpos) && return unit(Poly{T})
     return reduce(*, Poly{T}([one(T), gfpow2(i)]) for i in errpos)
 end
+erratalocator_polynomial(errpos::AbstractVector) = erratalocator_polynomial(UInt8, errpos)
 
 """
     erratalocator_polynomial(sydpoly::Poly, nsym::Int; check=false)
@@ -161,7 +162,7 @@ Forney algorithm, computes the values (error magnitude) to correct the input mes
 Warnning: The output polynomial might be incorrect if `errpos` is incomplete.
 """
 fillerasures(received::Poly, errpos::AbstractVector, nsym::Integer) = fillerasures!(copy(received), errpos, nsym)
-function fillerasures!(received::Poly, errpos::AbstractVector, nsym::Integer)
+function fillerasures!(received::Poly{T}, errpos::AbstractVector, nsym::Integer) where T
     ## number of errors exceeds limitation of the RS-code
     length(errpos) > nsym && throw(ReedSolomonError())
 
@@ -169,7 +170,7 @@ function fillerasures!(received::Poly, errpos::AbstractVector, nsym::Integer)
     sydpoly = syndrome_polynomial(received, nsym) 
     
     ## error locator polynomial
-    Λx = erratalocator_polynomial(errpos)
+    Λx = erratalocator_polynomial(T, errpos)
     
     ## evaluator polynomial Ω(x)≡S(x)Λ(x) mod xⁿ
     Ωx = evaluator_polynomial(sydpoly, Λx, nsym)
@@ -204,12 +205,12 @@ Computes the modified syndrome polynomial.
 Berlekamp-Massey algorithm, compute the error locator polynomial Λ(x)(given the erased positions).
 The `check` tag ensures that Λx can be decomposed into products of one degree polynomials.
 """
-function erratalocator_polynomial(sydpoly::Poly{T}, erasures::AbstractVector{T}, nsym::Integer; check=false) where T
+function erratalocator_polynomial(sydpoly::Poly{T}, erasures::AbstractVector, nsym::Integer; check=false) where T
     ## syndromes
     S = sydpoly.coeff
     ## initialize via erased data
     L = ρ = length(erasures) ## number of erased data
-    Λx = erratalocator_polynomial(erasures) ## erased locator polynomial
+    Λx = erratalocator_polynomial(T, erasures) ## erased locator polynomial
     Bx = copy(Λx)
     x = Poly([zero(T), one(T)])
 
