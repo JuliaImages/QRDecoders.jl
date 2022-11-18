@@ -4,7 +4,7 @@
 @testset "Operators for polynomials" begin
     ## polynomial_eval(p::Poly, x::Int)
     ### take values at 0 and 1
-    p = randpoly(1:255)
+    p = randpoly(Int, 1:255)
     @test polynomial_eval(p, 1) == reduce(⊻, p.coeff)
     @test polynomial_eval(p, 0) == first(p.coeff)
     ### polynomial of degree ≤ 3
@@ -25,21 +25,21 @@
     syd = syndrome_polynomial(msg, n) # syndrome polynomial
     @test syd.coeff == [64, 192, 93, 231, 52, 92, 228, 49, 83, 245]
     @test haserrors(msg, n)
-    errlocpoly = erratalocator_polynomial(UInt8[0]) # error locator polynomial
+    errlocpoly = erratalocator_polynomial([0]) # error locator polynomial
     evlpoly = evaluator_polynomial(syd, errlocpoly, n) # evaluator polynomial
     xn = Poly{UInt8}(push!(zeros(Int, n), 1)) ## xn = x^n
     @test iszeropoly(evlpoly + syd * errlocpoly % xn)
 
-    ## erratalocator_polynomial(errpos::AbstractVector)
+    ## erratalocator_polynomial
     nerr = rand(1:255) # number of errors
     errpos = rand(0:255, nerr)
     polyroots = Int.(gfpow2.(255 .- errpos)) # roots of error locator polynomial are 2 .^ -(errpos)
-    locpoly = erratalocator_polynomial(errpos)
+    locpoly = erratalocator_polynomial(Int, errpos)
     @test all(iszero, polynomial_eval.(Ref(locpoly), polyroots)) && length(locpoly) == nerr + 1
-    @test erratalocator_polynomial(Int[]) == Poly([1])
+    @test erratalocator_polynomial(Int, Int[]) == Poly([1])
 
     ## reducebyHorner(p::Poly, a::Int)
-    p, a = randpoly(2:255), rand(0:255)
+    p, a = randpoly(Int, 2:255), rand(0:255)
     qx = reducebyHorner(p, a)
     qeval = popfirst!(qx.coeff)
     @test qeval == polynomial_eval(p, a)
@@ -58,10 +58,10 @@
 
     ## getpositions(Λx::Poly)
     positions = sort!(unique!(rand(0:254, rand(1:255))))
-    Λx = erratalocator_polynomial(positions)
+    Λx = erratalocator_polynomial(Int, positions)
     @test sort!(getpositions(Λx)) == positions
     positions = collect(0:254)
-    Λx = erratalocator_polynomial(positions)
+    Λx = erratalocator_polynomial(Int, positions)
     @test sort!(getpositions(Λx)) == positions
 end
 
@@ -70,7 +70,7 @@ end
     ## haserrors(msg::Poly, n::Int)
     ### RS-Code can detect up to n errors
     ### message without errors
-    f, n = randpoly(1:127), rand(1:127)
+    f, n = randpoly(Int, 1:127), rand(1:127)
     msg = f << n + geterrcode(f, n)
     @test !haserrors(msg, n)
 
@@ -103,7 +103,7 @@ end
 
     ### random test
     fdeg, n = rand(1:200), 55
-    rawmsg = randpoly(fdeg)
+    rawmsg = randpoly(Int, fdeg)
     msg = rawmsg << n + geterrcode(rawmsg, n)
     ### received message
     errpos = sample(0:(n + fdeg - 1), 55; replace=false)
@@ -114,13 +114,13 @@ end
     ### error exceeds limitation
     n = 10
     errpos = collect(1:11)
-    rawmsg = randpoly(1:20)
+    rawmsg = randpoly(Int, 1:20)
     msg = rawmsg << n + geterrcode(rawmsg, n)
     @test_throws ReedSolomonError fillerasures(msg, errpos, n)
 
     ### no errors
     n = 55
-    rawmsg = randpoly(200)
+    rawmsg = randpoly(Int, 200)
     msg = rawmsg << n + geterrcode(rawmsg, n)
     errpos = unique!(rand(0:254, 55))
     @test fillerasures(msg, errpos, n) == msg
@@ -132,7 +132,7 @@ end
     ## berlekamp_massey_decoder(received::Poly, nsym::Int)
 
     ### number of errors within the capacity of RS-Code
-    rawmsg = randpoly(155)
+    rawmsg = randpoly(Int, 155)
     nsym = 100
     errpos = unique!(rand(0:254, 50)) # error positions
     msg = rawmsg << nsym + geterrcode(rawmsg, nsym)
@@ -140,7 +140,7 @@ end
     received.coeff[1 .+ errpos] .⊻= rand(1:255, length(errpos))
     sydpoly = syndrome_polynomial(received, nsym)
     Λx = erratalocator_polynomial(sydpoly, nsym)
-    errlocpoly = erratalocator_polynomial(errpos)
+    errlocpoly = erratalocator_polynomial(Int, errpos)
     @test Λx == errlocpoly
     @test berlekamp_massey_decoder(received, nsym) == msg
 
@@ -151,7 +151,7 @@ end
     @test berlekamp_massey_decoder(msg, nsym) == msg
 
     ### odd number of syndromes
-    rawmsg = randpoly(100)
+    rawmsg = randpoly(Int, 100)
     nsym = 155
     errpos = unique!(rand(0:254, 77)) # error positions
     msg = rawmsg << nsym + geterrcode(rawmsg, nsym)
@@ -159,12 +159,12 @@ end
     received.coeff[1 .+ errpos] .⊻= rand(1:255, length(errpos))
     sydpoly = syndrome_polynomial(received, nsym)
     Λx = erratalocator_polynomial(sydpoly, nsym)
-    errlocpoly = erratalocator_polynomial(errpos)
+    errlocpoly = erratalocator_polynomial(Int, errpos)
     @test Λx == errlocpoly
     @test berlekamp_massey_decoder(received, nsym) == msg
 
     ### too much errors(detected)
-    rawmsg = randpoly(100)
+    rawmsg = randpoly(Int, 100)
     nsym = 155
     errpos = sample(0:254, 78; replace=false) # error positions
     msg = rawmsg << nsym + geterrcode(rawmsg, nsym)
@@ -182,11 +182,69 @@ end
     errpos = [0, 1]
     received = copy(msg)
     received.coeff[1 .+ errpos] .⊻= [2, 3]
-    errlocpoly = erratalocator_polynomial(errpos)
+    errlocpoly = erratalocator_polynomial(Int, errpos)
     sydpoly = syndrome_polynomial(received, nsym)
     Λx = erratalocator_polynomial(sydpoly, nsym; check=true)
     @test !iszeropoly(errlocpoly + Λx)
-    @test Λx == erratalocator_polynomial([2])
+    @test Λx == erratalocator_polynomial(Int, [2])
+    @test !iszeropoly(berlekamp_massey_decoder(received, nsym) + msg)
+
+    # test for UInt8
+    rawmsg = randpoly(UInt8, 155)
+    nsym = 100
+    errpos = unique!(rand(0:254, 50)) # error positions
+    msg = rawmsg << nsym + geterrcode(rawmsg, nsym)
+    received = copy(msg)
+    received.coeff[1 .+ errpos] .⊻= rand(0x1:0xff, length(errpos))
+    sydpoly = syndrome_polynomial(received, nsym)
+    Λx = erratalocator_polynomial(sydpoly, nsym)
+    errlocpoly = erratalocator_polynomial(UInt8, errpos)
+    @test Λx == errlocpoly
+    @test berlekamp_massey_decoder(received, nsym) == msg
+
+    ### no errors
+    sydpoly = syndrome_polynomial(msg, nsym)
+    Λx = erratalocator_polynomial(sydpoly, nsym)
+    @test Λx == unit(Poly{UInt8})
+    @test berlekamp_massey_decoder(msg, nsym) == msg
+
+    ### odd number of syndromes
+    rawmsg = randpoly(UInt8, 100)
+    nsym = 155
+    errpos = unique!(rand(0:254, 77)) # error positions
+    msg = rawmsg << nsym + geterrcode(rawmsg, nsym)
+    received = copy(msg)
+    received.coeff[1 .+ errpos] .⊻= rand(0x1:0xff, length(errpos))
+    sydpoly = syndrome_polynomial(received, nsym)
+    Λx = erratalocator_polynomial(sydpoly, nsym)
+    errlocpoly = erratalocator_polynomial(UInt8, errpos)
+    @test Λx == errlocpoly
+    @test berlekamp_massey_decoder(received, nsym) == msg
+
+    ### too much errors(detected)
+    rawmsg = randpoly(UInt8, 100)
+    nsym = 155
+    errpos = sample(0x0:0xfe, 78; replace=false) # error positions
+    msg = rawmsg << nsym + geterrcode(rawmsg, nsym)
+    received = copy(msg)
+    received.coeff[1 .+ errpos] .⊻= rand(0x1:0xff, length(errpos))
+    sydpoly = syndrome_polynomial(received, nsym)
+    @test_throws ReedSolomonError erratalocator_polynomial(sydpoly, nsym; check=true)
+    @test_throws ReedSolomonError berlekamp_massey_decoder(received, nsym)
+    
+    ### too much errors(undetected!)
+    ### [0] -encode> [0, 0, 0] -transfer> [2, 3, 0] -correct> [2, 3, 1] -decode> [1] 
+    rawmsg = Poly([0x0])
+    nsym = 2
+    msg = rawmsg << nsym + geterrcode(rawmsg, nsym)
+    errpos = [0, 1]
+    received = copy(msg)
+    received.coeff[1 .+ errpos] .⊻= [2, 3]
+    errlocpoly = erratalocator_polynomial(errpos) # default UInt8
+    sydpoly = syndrome_polynomial(received, nsym)
+    Λx = erratalocator_polynomial(sydpoly, nsym; check=true)
+    @test !iszeropoly(errlocpoly + Λx)
+    @test Λx == erratalocator_polynomial(UInt8, [2])
     @test !iszeropoly(berlekamp_massey_decoder(received, nsym) + msg)
 end
 
@@ -194,13 +252,13 @@ end
     ## -- The modified Forney syndromes is still debugging -- ##
 
     ### length of the received message is too long
-    rawmsg = randpoly(100)
+    rawmsg = randpoly(Int, 100)
     nsym = 156
     msg = rawmsg << nsym + geterrcode(rawmsg, nsym)
     @test_throws DomainError berlekamp_massey_decoder(msg, nsym)
     
     ### number of erasures exceeds the capacity of RS-Code
-    rawmsg = randpoly(150)
+    rawmsg = randpoly(Int, 150)
     nsym = 50
     msg = rawmsg << nsym + geterrcode(rawmsg, nsym)
     erasures = sample(0:199, 51; replace=false)

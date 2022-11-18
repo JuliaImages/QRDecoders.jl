@@ -3,33 +3,33 @@
 @testset "Euclidean division" begin
     ## extended_euclidean_divide(r₁::Poly, r₂::Poly)
     ## Sugiyama_euclidean_divide(r₁::Poly, r₂::Poly, upperdeg::Int)
-    r = randpoly(55) ## common factor of f(x) and g(x)
-    f = r * randpoly(1:200)
-    g = r * randpoly(1:200)
+    r = randpoly(Int, 55) ## common factor of f(x) and g(x)
+    f = r * randpoly(Int, 1:200)
+    g = r * randpoly(Int, 1:200)
     a, b, common = extended_euclidean_divide(f, g)
     @test iszeropoly(a * f + b * g + common)
     @test iszeropoly(f % common) && iszeropoly(g % common)
     a, b, common = Sugiyama_euclidean_divide(f, g, 100)
     @test iszeropoly(a * f + b * g + common)
 
-    f, g = randpoly(rand(1:255)), Poly([0, 0])
+    f, g = randpoly(Int, rand(1:255)), Poly([0, 0])
     a, b, common = extended_euclidean_divide(f, g)
     @test iszeropoly(a * f + b * g + common)
     @test iszeropoly(f % common) && iszeropoly(g % common)
 
-    f, g = Poly([0, 0]), randpoly(rand(1:255))
+    f, g = Poly([0, 0]), randpoly(Int, rand(1:255))
     a, b, common = extended_euclidean_divide(f, g)
     @test iszeropoly(a * f + b * g + common)
     @test iszeropoly(f % common) && iszeropoly(g % common)
 
-    f = randpoly(20:200)
-    g = randpoly(20:200)
+    f = randpoly(Int, 20:200)
+    g = randpoly(Int, 20:200)
     a, b, common = Sugiyama_euclidean_divide(f, g, 20)
     @test iszeropoly(a * f + b * g + common)
 end
 
 @testset "Euclidean decoder -- without erasures" begin
-    rawmsg = randpoly(155)
+    rawmsg = randpoly(Int, 155)
     nsym = 100
     errpos = unique!(rand(0:254, 50)) # error positions
     msg = rawmsg << nsym + geterrcode(rawmsg, nsym)
@@ -41,7 +41,7 @@ end
     @test euclidean_decoder(msg, nsym) == msg
 
     ### odd number of syndromes
-    rawmsg = randpoly(100)
+    rawmsg = randpoly(Int, 100)
     nsym = 155
     errpos = unique!(rand(0:254, 77)) # error positions
     msg = rawmsg << nsym + geterrcode(rawmsg, nsym)
@@ -50,7 +50,7 @@ end
     @test euclidean_decoder(received, nsym) == msg
 
     ### too much errors(detected)
-    rawmsg = randpoly(100)
+    rawmsg = randpoly(Int, 100)
     nsym = 155
     errpos = sample(0:254, 78; replace=false) # error positions
     msg = rawmsg << nsym + geterrcode(rawmsg, nsym)
@@ -74,13 +74,13 @@ end
     ## euclidean_decoder(received::Poly, erasures::AbstractVector, nsym::Int)
 
     ### length of the received message is too long
-    rawmsg = randpoly(100)
+    rawmsg = randpoly(Int, 100)
     nsym = 156
     msg = rawmsg << nsym + geterrcode(rawmsg, nsym)
     @test_throws DomainError euclidean_decoder(msg, nsym)
     
     ### number of erasures exceeds the capacity of RS-Code
-    rawmsg = randpoly(150)
+    rawmsg = randpoly(Int, 150)
     nsym = 50
     msg = rawmsg << nsym + geterrcode(rawmsg, nsym)
     erasures = sample(0:199, 51; replace=false)
@@ -88,7 +88,7 @@ end
 
     ### number of errors within the capacity of RS-Code
     ### 2 * v + ρ = 60 + 40 == nsym
-    rawmsg = randpoly(155)
+    rawmsg = randpoly(Int, 155)
     nsym = 100
     errpos = sample(0:254, 70; replace=false) # error positions
     erasures = errpos[31:70]
@@ -98,13 +98,13 @@ end
     @test euclidean_decoder(received, erasures, nsym) == msg
     ### Γx and Ωx by euclidean_decoder
     sydpoly = syndrome_polynomial(received, nsym)
-    Γx = erratalocator_polynomial(erasures)
+    Γx = erratalocator_polynomial(Int, erasures)
     xn = Poly(push!(zeros(Int, nsym), 1))
     upperdeg = (nsym + length(erasures)) ÷ 2 - 1
     Λx, _, Ωx = Sugiyama_euclidean_divide(sydpoly * Γx, xn, upperdeg)
     Λx *= Γx
     ### Λx and Ωx by direct computation
-    errloc = erratalocator_polynomial(errpos)
+    errloc = erratalocator_polynomial(Int, errpos)
     evlpoly = evaluator_polynomial(sydpoly, errloc, nsym)
     c0 = errloc ÷ Λx
     @test iszeropoly(c0 * Λx + errloc) && iszeropoly(c0 * Ωx + evlpoly)
@@ -114,7 +114,7 @@ end
     @test euclidean_decoder(received, erasures, nsym) == msg
     ### Γx and Ωx by euclidean_decoder
     sydpoly = syndrome_polynomial(received, nsym)
-    Γx = erratalocator_polynomial(erasures)
+    Γx = erratalocator_polynomial(Int, erasures)
     xn = Poly(push!(zeros(Int, nsym), 1))
     upperdeg = (nsym + length(erasures)) ÷ 2 - 1
     Λx, _, Ωx = Sugiyama_euclidean_divide(sydpoly * Γx, xn, upperdeg)
@@ -123,7 +123,7 @@ end
 
     ### errors within the capacity of the RS-Code
     ### 55 + 50 * 2 ≤ 155
-    rawmsg = randpoly(100)
+    rawmsg = randpoly(Int, 100)
     nsym = 155
     errpos = sample(0:254, 105; replace=false) # error positions
     erasures = errpos[51:105]
@@ -133,20 +133,20 @@ end
     @test euclidean_decoder(received, erasures, nsym) == msg
     ### Γx and Ωx by euclidean_decoder
     sydpoly = syndrome_polynomial(received, nsym)
-    Γx = erratalocator_polynomial(erasures)
+    Γx = erratalocator_polynomial(Int, erasures)
     xn = Poly(push!(zeros(Int, nsym), 1))
     upperdeg = (nsym + length(erasures)) ÷ 2 - 1
     Λx, _, Ωx = Sugiyama_euclidean_divide(sydpoly * Γx, xn, upperdeg)
     Λx *= Γx
     ### Λx and Ωx by direct computation
-    errloc = erratalocator_polynomial(errpos)
+    errloc = erratalocator_polynomial(Int, errpos)
     evlpoly = evaluator_polynomial(sydpoly, errloc, nsym)
     c0 = errloc ÷ Λx
     @test iszeropoly(c0 * Λx + errloc) && iszeropoly(c0 * Ωx + evlpoly)
 
     ### too much errors(detected)
     ### 2 * v + ρ = d + 1
-    rawmsg = randpoly(100)
+    rawmsg = randpoly(Int, 100)
     v, ρ = rand(20:50), rand(20:55)
     nsym = 2 * v + ρ - 1
     errpos = sample(0:(nsym + 100 - 1), nsym + 1; replace=false) # error positions
@@ -168,13 +168,13 @@ end
     @test euclidean_decoder(received, erasures, nsym) == msg
     ### Γx and Ωx by euclidean_decoder
     sydpoly = syndrome_polynomial(received, nsym)
-    Γx = erratalocator_polynomial(erasures)
+    Γx = erratalocator_polynomial(Int, erasures)
     xn = Poly(push!(zeros(Int, nsym), 1))
     upperdeg = (nsym + length(erasures)) ÷ 2 - 1
     Λx, _, Ωx = Sugiyama_euclidean_divide(sydpoly * Γx, xn, upperdeg)
     Λx *= Γx
     ### Λx and Ωx by direct computation
-    errloc = erratalocator_polynomial(errpos)
+    errloc = erratalocator_polynomial(Int, errpos)
     evlpoly = evaluator_polynomial(sydpoly, errloc, nsym)
     c0 = errloc ÷ Λx
     @test iszeropoly(c0 * Λx + errloc) && iszeropoly(c0 * Ωx + evlpoly)
