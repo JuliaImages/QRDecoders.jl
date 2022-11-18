@@ -25,7 +25,7 @@
     syd = syndrome_polynomial(msg, n) # syndrome polynomial
     @test syd.coeff == [64, 192, 93, 231, 52, 92, 228, 49, 83, 245]
     @test haserrors(msg, n)
-    errlocpoly = erratalocator_polynomial(UInt8, [0]) # error locator polynomial
+    errlocpoly = erratalocator_polynomial([0]) # error locator polynomial
     evlpoly = evaluator_polynomial(syd, errlocpoly, n) # evaluator polynomial
     xn = Poly{UInt8}(push!(zeros(Int, n), 1)) ## xn = x^n
     @test iszeropoly(evlpoly + syd * errlocpoly % xn)
@@ -240,7 +240,7 @@ end
     errpos = [0, 1]
     received = copy(msg)
     received.coeff[1 .+ errpos] .⊻= [2, 3]
-    errlocpoly = erratalocator_polynomial(UInt8, errpos)
+    errlocpoly = erratalocator_polynomial(errpos) # default UInt8
     sydpoly = syndrome_polynomial(received, nsym)
     Λx = erratalocator_polynomial(sydpoly, nsym; check=true)
     @test !iszeropoly(errlocpoly + Λx)
