@@ -60,9 +60,10 @@ using QRDecoders.Syndrome:
 
 Random polynomial of degree n.
 """
-randpoly(n::Int) = Poly([rand(0:255, n-1)..., rand(1:255)])
-randpoly(range::AbstractVector) = randpoly(rand(range))
-
+randpoly(::Type{T}, n::Int) where T = Poly{T}([rand(0:255, n-1)..., rand(1:255)])
+randpoly(n::Int) = randpoly(UInt8, n)
+randpoly(::Type{T}, range::AbstractVector{Int}) where T = randpoly(T, rand(range))
+randpoly(range::AbstractVector{Int}) = randpoly(UInt8, range)
 eclevels = [Low(), Medium(), Quartile(), High()]
 modes = [Numeric(), Alphanumeric(), Kanji(), Byte(), UTF8()]
 

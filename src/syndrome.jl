@@ -122,7 +122,7 @@ Returns true if the received polynomial has errors. (may go undetected when the 
 haserrors(received::Poly, nsym::Integer) = !iszeropoly(syndrome_polynomial(received, nsym))
 
 """
-    erratalocator_polynomial(errpos::AbstractVector)
+    erratalocator_polynomial(::Type{T}, errpos::AbstractVector)
 
 Compute the erasures/error locator polynomial Λ(x) from the erasures/errors positions.
 """
@@ -380,7 +380,7 @@ function euclidean_decoder!(received::Poly{T}, erasures::AbstractVector, nsym::I
     iszeropoly(sydpoly) && return received
     
     ## erasures locator polynomial Γx
-    Γx = erratalocator_polynomial(erasures)
+    Γx = erratalocator_polynomial(T, erasures)
     xn = Poly(push!(zeros(T, nsym), one(T)))
     
     ## deg(Ω(x))  ≤ ⌊(nsym + length(erasures)) / 2⌋ - 1
