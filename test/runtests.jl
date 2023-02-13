@@ -1,4 +1,5 @@
 using Test
+using ZBar
 using ImageTransformations: imresize
 using FileIO: load, save
 using StatsBase: sample
@@ -68,6 +69,9 @@ eclevels = [Low(), Medium(), Quartile(), High()]
 modes = [Numeric(), Alphanumeric(), Kanji(), Byte(), UTF8()]
 
 include("randerr.jl")
+
+# interact with ZBar
+include("tst_zbar.jl")
 
 # decompose of the qr code 
 include("tst_qrinfo.jl")
