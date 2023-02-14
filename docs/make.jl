@@ -10,4 +10,7 @@ makedocs(;
 
 deploydocs(;
     repo="github.com/JuliaImages/QRDecoders.jl",
+    devurl = "dev",
+    devbranch = "master",
+    versions = ["v#.#", "stable" => "v^", "dev" =>  "dev"],
 )

@@ -4,12 +4,13 @@ export Euclidean, BerlekampMassey
 export euclidean_decoder, berlekamp_massey_decoder, RSdecoder
 export InfoError, DecodeError, ReedSolomonError
 export qrdecompose, qrdecode, qrdecodegif, getqrmatrix, getqrmatrices
-export QRInfo
+export QRInfo, qrdecodeimg, qrdecodesingle
 
 using QRCoders
 using ImageTransformations: imresize
 using FileIO: load
 using ColorTypes
+using ZBar
 
 """
     ReedSolomonError <: Exception
